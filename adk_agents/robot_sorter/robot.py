@@ -304,6 +304,21 @@ class Trace:
         except Exception:  # noqa: BLE001  (tracing must never break a run)
             pass
 
+    def snapshot(self, tag, obs, t):
+        """The camera images at a moment worth looking at afterwards (e.g. the grasp check after a lift)."""
+        if not self.dir or self.episode < 0:
+            return
+        import cv2
+        try:
+            d = os.path.join(self.dir, "frames")
+            os.makedirs(d, exist_ok=True)
+            for key in ("head_rgb", "left_wrist_rgb", "right_wrist_rgb"):
+                if obs.get(key) is not None:
+                    cv2.imwrite(os.path.join(d, f"ep{self.episode:03d}_{tag}_t{t:06.2f}_{key[:-4]}.jpg"),
+                                np.ascontiguousarray(obs[key][..., ::-1]), [cv2.IMWRITE_JPEG_QUALITY, 88])
+        except Exception:  # noqa: BLE001
+            pass
+
     def frame_dump(self, obs, t, detections):
         if not self.dir or self.episode < 0:
             return
@@ -316,11 +331,23 @@ class Trace:
             self.frame += 1
             cv2.imwrite(stem + ".jpg", np.ascontiguousarray(obs["head_rgb"][..., ::-1]), [cv2.IMWRITE_JPEG_QUALITY, 92])
             if obs.get("head_depth") is not None:
-                cv2.imwrite(stem + "_depth.png", np.ascontiguousarray(obs["head_depth"]).astype(np.uint16))
+                d = np.ascontiguousarray(obs["head_depth"]).astype(np.uint16)
+                cv2.imwrite(stem + "_depth.png", d)              # the data: 16-bit millimetres (looks black in a viewer)
+                cv2.imwrite(stem + "_depth_view.jpg", depth_view(d))     # the same for human eyes
             with open(stem + ".json", "w") as f:
                 json.dump({"t": t, "detections": detections}, f)
         except Exception:  # noqa: BLE001
             pass
+
+
+def depth_view(depth_mm):
+    """A depth image (uint16, millimetres) as a picture: red is near (0.3 m), blue is far (1.2 m), black = no reading."""
+    import cv2
+    m = np.asarray(depth_mm, np.float32) * 0.001
+    near = np.clip(1.0 - (m - 0.3) / 0.9, 0.0, 1.0)
+    img = cv2.applyColorMap((255 * near).astype(np.uint8), cv2.COLORMAP_JET)
+    img[m <= 0] = 0
+    return img
 
 
 _robot = None

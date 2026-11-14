@@ -1,0 +1,111 @@
+[
+ {
+  "shape": "triangle",
+  "color": "red",
+  "yaw": -40.0,
+  "x": 0.36,
+  "y": 0.155,
+  "outcome": "counter",
+  "attempts": [
+   "failed",
+   "failed",
+   "failed"
+  ],
+  "grips": [
+   "105.0",
+   "105.0",
+   "105.0"
+  ],
+  "sim_s": 35.0,
+  "end": "time_limit"
+ },
+ {
+  "shape": "triangle",
+  "color": "yellow",
+  "yaw": -40.0,
+  "x": 0.54,
+  "y": 0.155,
+  "outcome": "counter",
+  "attempts": [
+   "missed",
+   "missed",
+   "missed"
+  ],
+  "grips": [
+   "105.0",
+   "90.0"
+  ],
+  "sim_s": 35.0,
+  "end": "time_limit"
+ },
+ {
+  "shape": "triangle",
+  "color": "blue",
+  "yaw": 0.0,
+  "x": 0.36,
+  "y": 0.155,
+  "outcome": "counter",
+  "attempts": [
+   "missed",
+   "failed"
+  ],
+  "grips": [
+   "105.0",
+   "90.0"
+  ],
+  "sim_s": 25.2,
+  "end": "done"
+ },
+ {
+  "shape": "triangle",
+  "color": "red",
+  "yaw": 0.0,
+  "x": 0.54,
+  "y": 0.155,
+  "outcome": "correct",
+  "attempts": [
+   "completed"
+  ],
+  "grips": [
+   "105.0"
+  ],
+  "sim_s": 12.37,
+  "end": "done"
+ },
+ {
+  "shape": "triangle",
+  "color": "yellow",
+  "yaw": 40.0,
+  "x": 0.36,
+  "y": 0.155,
+  "outcome": "correct",
+  "attempts": [
+   "missed",
+   "completed"
+  ],
+  "grips": [
+   "105.0",
+   "90.0"
+  ],
+  "sim_s": 22.17,
+  "end": "done"
+ },
+ {
+  "shape": "triangle",
+  "color": "blue",
+  "yaw": 40.0,
+  "x": 0.54,
+  "y": 0.155,
+  "outcome": "counter",
+  "attempts": [
+   "failed",
+   "failed"
+  ],
+  "grips": [
+   "105.0",
+   "105.0"
+  ],
+  "sim_s": 35.0,
+  "end": "time_limit"
+ }
+]

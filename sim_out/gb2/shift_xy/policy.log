@@ -1,0 +1,181 @@
+2026-11-14 17:00:24,993 robot_sorter INFO adk/bench ready
+2026-11-14 17:00:24,998 aaltonomous.policy_server INFO policy server 'adk/bench' listening on 0.0.0.0:8000
+2026-11-14 17:01:05,474 websockets.server INFO connection open
+2026-11-14 17:01:09,575 robot_sorter INFO [agent] reset task=sort_fixed seed=0: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 17:01:11,317 robot_sorter INFO [agent t=  0.60] look({})
+2026-11-14 17:01:11,329 robot_sorter INFO [robot t=  0.60] start arms aside (both arm, 0.9 s)
+2026-11-14 17:01:15,541 robot_sorter INFO [robot t=  2.04] arms aside: completed
+2026-11-14 17:01:16,286 robot_sorter INFO [robot t=  2.24] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.76, walls 0.92
+2026-11-14 17:01:16,343 robot_sorter INFO [agent t=  2.24] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'right', 'position_m': [0.294, -0.092], 'point': [779, 714], 'rgb': [189, 82, 81], 'shape_guess': 'triangle', 'yaw_deg_guess': -49.8}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.8}
+2026-11-14 17:01:16,344 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:01:16,353 robot_sorter INFO [agent t=  2.24] pick_and_place({'object_id': 'obj_1', 'bin': 'left'})
+2026-11-14 17:01:22,601 robot_sorter INFO [agent t=  4.44] pick_and_place -> {'status': 'failed', 'reason': "no safe plan: no grip on the triangle's flat faces (105 deg): only the plain pinch can be planned from here, and it does not hold a triangular prism", 'object': 'obj_1', 'bin': 'left', 'grasp_at_m': [0.298, -0.087, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 115.6}
+2026-11-14 17:01:22,602 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:01:22,608 robot_sorter INFO [agent t=  4.44] hand_over({'object_id': 'obj_1', 'bin': 'left'})
+2026-11-14 17:01:22,910 robot_sorter INFO [robot t=  4.64] start hand_over obj_1 (for left) (right arm, 9.6 s)
+2026-11-14 17:01:49,877 robot_sorter INFO [robot t= 14.50] hand_over obj_1 (for left): completed
+2026-11-14 17:01:49,883 robot_sorter INFO [robot t= 14.50] start arms aside (both arm, 0.9 s)
+2026-11-14 17:01:53,752 robot_sorter INFO [robot t= 15.94] arms aside: completed
+2026-11-14 17:01:53,799 robot_sorter INFO [agent t= 15.94] hand_over -> {'status': 'completed', 'arm': 'right', 'seconds': 9.6, 'object': 'obj_1', 'bin': 'left', 'holding': 'nothing', 'time_left_s': 105.5, 'objects_on_counter': [{'id': 'obj_2', 'side': 'right', 'position_m': [0.286, -0.099], 'point': [799, 730], 'rgb': [190, 80, 80], 'shape_guess': 'triangle', 'yaw_deg_guess': 58.7}]}
+2026-11-14 17:01:53,800 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:01:53,806 robot_sorter INFO [agent t= 15.94] pick_and_place({'object_id': 'obj_2', 'bin': 'left'})
+2026-11-14 17:01:55,220 robot_sorter INFO [agent t= 16.34] pick_and_place -> {'status': 'failed', 'reason': "no safe plan: no grip on the triangle's flat faces (105 deg): only the plain pinch can be planned from here, and it does not hold a triangular prism", 'object': 'obj_2', 'bin': 'left', 'grasp_at_m': [0.29, -0.094, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 103.7}
+2026-11-14 17:01:55,221 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:01:55,228 robot_sorter INFO [agent t= 16.34] hand_over({'object_id': 'obj_2', 'bin': 'left'})
+2026-11-14 17:01:55,536 robot_sorter INFO [robot t= 16.54] start hand_over obj_2 (for left) (right arm, 9.8 s)
+2026-11-14 17:02:23,440 robot_sorter INFO [robot t= 26.60] hand_over obj_2 (for left): completed
+2026-11-14 17:02:23,447 robot_sorter INFO [robot t= 26.60] start arms aside (both arm, 0.9 s)
+2026-11-14 17:02:27,371 robot_sorter INFO [robot t= 28.04] arms aside: completed
+2026-11-14 17:02:27,415 robot_sorter INFO [agent t= 28.04] hand_over -> {'status': 'completed', 'arm': 'right', 'seconds': 9.8, 'object': 'obj_2', 'bin': 'left', 'holding': 'nothing', 'time_left_s': 93.4, 'objects_on_counter': [{'id': 'obj_3', 'side': 'right', 'position_m': [0.285, -0.102], 'point': [801, 738], 'rgb': [193, 78, 78], 'shape_guess': 'triangle', 'yaw_deg_guess': 43.6}]}
+2026-11-14 17:02:27,416 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:02:27,422 robot_sorter INFO [agent t= 28.04] pick_and_place({'object_id': 'obj_3', 'bin': 'left'})
+2026-11-14 17:02:28,813 robot_sorter INFO [agent t= 28.44] pick_and_place -> {'status': 'failed', 'reason': "no safe plan: no grip on the triangle's flat faces (105 deg): only the plain pinch can be planned from here, and it does not hold a triangular prism", 'object': 'obj_3', 'bin': 'left', 'grasp_at_m': [0.289, -0.097, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 91.6}
+2026-11-14 17:02:28,813 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:02:28,820 robot_sorter INFO [agent t= 28.44] hand_over({'object_id': 'obj_3', 'bin': 'left'})
+2026-11-14 17:02:29,129 robot_sorter INFO [robot t= 28.64] start hand_over obj_3 (for left) (right arm, 10.4 s)
+2026-11-14 17:02:56,364 robot_sorter INFO [agent] episode end: 5 moves [{'t': 0.6, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 4.64, 'move': 'hand_over obj_1 (for left)', 'arm': 'right', 'outcome': 'completed'}, {'t': 14.5, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 16.54, 'move': 'hand_over obj_2 (for left)', 'arm': 'right', 'outcome': 'completed'}, {'t': 26.6, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}]; stats {'model_errors': 0, 'runs': 1}
+2026-11-14 17:02:56,364 robot_sorter INFO [agent] reset task=sort_fixed seed=1: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 17:02:56,366 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:02:56,366 google_adk.google.adk.runners INFO Root node robot_sorter was cancelled.
+2026-11-14 17:02:56,367 robot_sorter INFO [robot t= 34.84] hand_over obj_3 (for left): cancelled: the episode was reset
+2026-11-14 17:02:58,052 robot_sorter INFO [agent t=  0.57] look({})
+2026-11-14 17:02:58,059 robot_sorter INFO [robot t=  0.57] start arms aside (both arm, 0.9 s)
+2026-11-14 17:03:02,147 robot_sorter INFO [robot t=  2.00] arms aside: completed
+2026-11-14 17:03:02,882 robot_sorter INFO [robot t=  2.20] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.76, walls 0.92
+2026-11-14 17:03:02,927 robot_sorter INFO [agent t=  2.20] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.294, 0.088], 'point': [779, 354], 'rgb': [202, 192, 63], 'shape_guess': 'triangle', 'yaw_deg_guess': -50.1}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.8}
+2026-11-14 17:03:02,927 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:03:02,937 robot_sorter INFO [agent t=  2.20] pick_and_place({'object_id': 'obj_1', 'bin': 'center'})
+2026-11-14 17:03:04,269 robot_sorter INFO [robot t=  2.60] start pick_and_place obj_1 -> center: grasp and lift (left arm, 4.9 s)
+2026-11-14 17:03:19,370 robot_sorter INFO [robot t=  8.04] pick_and_place obj_1 -> center: grasp and lift: completed
+2026-11-14 17:03:19,383 robot_sorter INFO [robot t=  8.04] start pick_and_place obj_1 -> center: missed, back home (both arm, 2.7 s)
+2026-11-14 17:03:28,012 robot_sorter INFO [robot t= 10.97] pick_and_place obj_1 -> center: missed, back home: completed
+2026-11-14 17:03:28,019 robot_sorter INFO [robot t= 10.97] start arms aside (both arm, 0.9 s)
+2026-11-14 17:03:32,221 robot_sorter INFO [robot t= 12.40] arms aside: completed
+2026-11-14 17:03:32,269 robot_sorter INFO [agent t= 12.40] pick_and_place -> {'status': 'missed', 'reason': 'the hand closed on nothing (finger sensors): the object is still on the counter. The arm is back home.', 'grasp_check': {'object_in_hand': False, 'finger_tracking_error_rad': 0.0, 'threshold_rad': 0.015}, 'arm': 'left', 'object': 'obj_1', 'bin': 'center', 'grasp_at_m': [0.298, 0.093, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 107.6, 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.28, 0.083], 'point': [812, 360], 'rgb': [201, 190, 61], 'shape_guess': 'triangle', 'yaw_deg_guess': 55.6}], 'object_moved_m': [-0.018, -0.009], 'object_now': 'obj_1'}
+2026-11-14 17:03:32,270 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:03:32,276 robot_sorter INFO [agent t= 12.40] pick_and_place({'object_id': 'obj_1', 'bin': 'center'})
+2026-11-14 17:03:32,391 robot_sorter INFO [robot t= 12.40] start pick_and_place obj_1 -> center: grasp and lift (left arm, 4.2 s)
+2026-11-14 17:03:45,896 robot_sorter INFO [robot t= 17.14] pick_and_place obj_1 -> center: grasp and lift: completed
+2026-11-14 17:03:45,910 robot_sorter INFO [robot t= 17.14] start pick_and_place obj_1 -> center: missed, back home (both arm, 2.5 s)
+2026-11-14 17:03:53,617 robot_sorter INFO [robot t= 19.87] pick_and_place obj_1 -> center: missed, back home: completed
+2026-11-14 17:03:53,625 robot_sorter INFO [robot t= 19.87] start arms aside (both arm, 0.9 s)
+2026-11-14 17:03:57,702 robot_sorter INFO [robot t= 21.30] arms aside: completed
+2026-11-14 17:03:57,748 robot_sorter INFO [agent t= 21.30] pick_and_place -> {'status': 'missed', 'reason': 'the hand closed on nothing (finger sensors): the object is still on the counter. The arm is back home.', 'grasp_check': {'object_in_hand': False, 'finger_tracking_error_rad': 0.0, 'threshold_rad': 0.015}, 'arm': 'left', 'object': 'obj_1', 'bin': 'center', 'grasp_at_m': [0.284, 0.088, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 90.0}, 'holding': 'nothing', 'time_left_s': 98.7, 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.262, 0.078], 'point': [857, 368], 'rgb': [200, 190, 63], 'shape_guess': 'triangle', 'yaw_deg_guess': -43.2}], 'object_moved_m': [-0.022, -0.011], 'object_now': 'obj_1'}
+2026-11-14 17:03:57,748 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:03:57,755 robot_sorter INFO [agent t= 21.30] done({'summary': "bench: tries per object {'obj_1': 2}"})
+2026-11-14 17:03:57,756 robot_sorter INFO [robot t= 21.30] done: bench: tries per object {'obj_1': 2}
+2026-11-14 17:03:57,756 robot_sorter INFO [agent t= 21.30] done -> {'status': 'episode ended', 'moves': 7, 'holding': 'nothing', 'time_left_s': 98.7}
+2026-11-14 17:03:57,756 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:03:57,763 robot_sorter INFO [agent t= 21.30] says: Bench episode finished.
+2026-11-14 17:03:57,763 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:04:04,238 robot_sorter INFO [agent] episode end: 7 moves [{'t': 0.57, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 2.6, 'move': 'pick_and_place obj_1 -> center: grasp and lift', 'arm': 'left', 'outcome': 'completed'}, {'t': 8.04, 'move': 'pick_and_place obj_1 -> center: missed, back home', 'arm': None, 'outcome': 'completed'}, {'t': 10.97, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 12.4, 'move': 'pick_and_place obj_1 -> center: grasp and lift', 'arm': 'left', 'outcome': 'completed'}, {'t': 17.14, 'move': 'pick_and_place obj_1 -> center: missed, back home', 'arm': None, 'outcome': 'completed'}, {'t': 19.87, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}]; stats {'model_errors': 0, 'runs': 2}
+2026-11-14 17:04:04,238 robot_sorter INFO [agent] reset task=sort_fixed seed=2: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 17:04:05,902 robot_sorter INFO [agent t=  0.57] look({})
+2026-11-14 17:04:05,910 robot_sorter INFO [robot t=  0.57] start arms aside (both arm, 0.9 s)
+2026-11-14 17:04:09,843 robot_sorter INFO [robot t=  2.00] arms aside: completed
+2026-11-14 17:04:10,573 robot_sorter INFO [robot t=  2.20] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.76, walls 0.92
+2026-11-14 17:04:10,618 robot_sorter INFO [agent t=  2.20] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'right', 'position_m': [0.294, -0.093], 'point': [778, 715], 'rgb': [80, 123, 188], 'shape_guess': 'triangle', 'yaw_deg_guess': 30.3}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.8}
+2026-11-14 17:04:10,618 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:04:10,627 robot_sorter INFO [agent t=  2.20] pick_and_place({'object_id': 'obj_1', 'bin': 'right'})
+2026-11-14 17:04:11,014 robot_sorter INFO [robot t=  2.40] start pick_and_place obj_1 -> right: grasp and lift (right arm, 5.0 s)
+2026-11-14 17:04:26,090 robot_sorter INFO [robot t=  7.90] pick_and_place obj_1 -> right: grasp and lift: completed
+2026-11-14 17:04:26,091 robot_sorter INFO [robot t=  7.90] start pick_and_place obj_1 -> right: carry and release (right arm, 4.1 s)
+2026-11-14 17:04:37,915 robot_sorter INFO [robot t= 12.20] pick_and_place obj_1 -> right: carry and release: completed
+2026-11-14 17:04:37,922 robot_sorter INFO [robot t= 12.20] start arms aside (both arm, 0.9 s)
+2026-11-14 17:04:41,883 robot_sorter INFO [robot t= 13.64] arms aside: completed
+2026-11-14 17:04:41,929 robot_sorter INFO [agent t= 13.64] pick_and_place -> {'status': 'completed', 'arm': 'right', 'seconds': 9.1, 'object': 'obj_1', 'bin': 'right', 'grasp_at_m': [0.298, -0.088, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 107.8, 'grasp_check': {'object_in_hand': True, 'finger_tracking_error_rad': 0.022, 'threshold_rad': 0.015}, 'objects_on_counter': []}
+2026-11-14 17:04:41,930 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:04:41,936 robot_sorter INFO [agent t= 13.64] done({'summary': "bench: tries per object {'obj_1': 1}"})
+2026-11-14 17:04:41,937 robot_sorter INFO [robot t= 13.64] done: bench: tries per object {'obj_1': 1}
+2026-11-14 17:04:41,937 robot_sorter INFO [agent t= 13.64] done -> {'status': 'episode ended', 'moves': 4, 'holding': 'nothing', 'time_left_s': 106.4}
+2026-11-14 17:04:41,938 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:04:41,944 robot_sorter INFO [agent t= 13.64] says: Bench episode finished.
+2026-11-14 17:04:41,944 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:04:48,237 robot_sorter INFO [agent] episode end: 4 moves [{'t': 0.57, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 2.4, 'move': 'pick_and_place obj_1 -> right: grasp and lift', 'arm': 'right', 'outcome': 'completed'}, {'t': 7.9, 'move': 'pick_and_place obj_1 -> right: carry and release', 'arm': 'right', 'outcome': 'completed'}, {'t': 12.2, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}]; stats {'model_errors': 0, 'runs': 3}
+2026-11-14 17:04:48,237 robot_sorter INFO [agent] reset task=sort_fixed seed=3: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 17:04:49,782 robot_sorter INFO [agent t=  0.57] look({})
+2026-11-14 17:04:49,789 robot_sorter INFO [robot t=  0.57] start arms aside (both arm, 0.9 s)
+2026-11-14 17:04:53,589 robot_sorter INFO [robot t=  2.00] arms aside: completed
+2026-11-14 17:04:54,319 robot_sorter INFO [robot t=  2.20] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.76, walls 0.92
+2026-11-14 17:04:54,363 robot_sorter INFO [agent t=  2.20] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.294, 0.087], 'point': [778, 355], 'rgb': [192, 76, 76], 'shape_guess': 'triangle', 'yaw_deg_guess': 30.2}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.8}
+2026-11-14 17:04:54,364 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:04:54,372 robot_sorter INFO [agent t=  2.20] pick_and_place({'object_id': 'obj_1', 'bin': 'left'})
+2026-11-14 17:04:54,481 robot_sorter INFO [robot t=  2.20] start pick_and_place obj_1 -> left: grasp and lift (left arm, 3.6 s)
+2026-11-14 17:05:05,054 robot_sorter INFO [robot t=  6.27] pick_and_place obj_1 -> left: grasp and lift: completed
+2026-11-14 17:05:05,055 robot_sorter INFO [robot t=  6.27] start pick_and_place obj_1 -> left: carry and release (left arm, 4.4 s)
+2026-11-14 17:05:17,587 robot_sorter INFO [robot t= 10.87] pick_and_place obj_1 -> left: carry and release: completed
+2026-11-14 17:05:17,594 robot_sorter INFO [robot t= 10.87] start arms aside (both arm, 0.9 s)
+2026-11-14 17:05:21,454 robot_sorter INFO [robot t= 12.30] arms aside: completed
+2026-11-14 17:05:21,497 robot_sorter INFO [agent t= 12.30] pick_and_place -> {'status': 'completed', 'arm': 'left', 'seconds': 7.9, 'object': 'obj_1', 'bin': 'left', 'grasp_at_m': [0.298, 0.092, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 109.1, 'grasp_check': {'object_in_hand': True, 'finger_tracking_error_rad': 0.037, 'threshold_rad': 0.015}, 'objects_on_counter': []}
+2026-11-14 17:05:21,498 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:05:21,504 robot_sorter INFO [agent t= 12.30] done({'summary': "bench: tries per object {'obj_1': 1}"})
+2026-11-14 17:05:21,505 robot_sorter INFO [robot t= 12.30] done: bench: tries per object {'obj_1': 1}
+2026-11-14 17:05:21,505 robot_sorter INFO [agent t= 12.30] done -> {'status': 'episode ended', 'moves': 4, 'holding': 'nothing', 'time_left_s': 107.7}
+2026-11-14 17:05:21,506 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:05:21,511 robot_sorter INFO [agent t= 12.30] says: Bench episode finished.
+2026-11-14 17:05:21,512 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:05:27,840 robot_sorter INFO [agent] episode end: 4 moves [{'t': 0.57, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 2.2, 'move': 'pick_and_place obj_1 -> left: grasp and lift', 'arm': 'left', 'outcome': 'completed'}, {'t': 6.27, 'move': 'pick_and_place obj_1 -> left: carry and release', 'arm': 'left', 'outcome': 'completed'}, {'t': 10.87, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}]; stats {'model_errors': 0, 'runs': 4}
+2026-11-14 17:05:27,840 robot_sorter INFO [agent] reset task=sort_fixed seed=4: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 17:05:29,488 robot_sorter INFO [agent t=  0.57] look({})
+2026-11-14 17:05:29,496 robot_sorter INFO [robot t=  0.57] start arms aside (both arm, 0.9 s)
+2026-11-14 17:05:33,446 robot_sorter INFO [robot t=  2.00] arms aside: completed
+2026-11-14 17:05:34,181 robot_sorter INFO [robot t=  2.20] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.76, walls 0.91
+2026-11-14 17:05:34,226 robot_sorter INFO [agent t=  2.20] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'right', 'position_m': [0.294, -0.093], 'point': [779, 716], 'rgb': [202, 193, 63], 'shape_guess': 'triangle', 'yaw_deg_guess': -9.4}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.8}
+2026-11-14 17:05:34,226 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:05:34,235 robot_sorter INFO [agent t=  2.20] pick_and_place({'object_id': 'obj_1', 'bin': 'center'})
+2026-11-14 17:05:35,450 robot_sorter INFO [robot t=  2.60] start pick_and_place obj_1 -> center: grasp and lift (right arm, 4.0 s)
+2026-11-14 17:05:47,587 robot_sorter INFO [robot t=  7.14] pick_and_place obj_1 -> center: grasp and lift: completed
+2026-11-14 17:05:47,598 robot_sorter INFO [robot t=  7.14] start pick_and_place obj_1 -> center: missed, back home (both arm, 1.6 s)
+2026-11-14 17:05:52,744 robot_sorter INFO [robot t=  9.00] pick_and_place obj_1 -> center: missed, back home: completed
+2026-11-14 17:05:52,750 robot_sorter INFO [robot t=  9.00] start arms aside (both arm, 0.9 s)
+2026-11-14 17:05:56,736 robot_sorter INFO [robot t= 10.44] arms aside: completed
+2026-11-14 17:05:56,780 robot_sorter INFO [agent t= 10.44] pick_and_place -> {'status': 'missed', 'reason': 'the hand closed on nothing (finger sensors): the object is still on the counter. The arm is back home.', 'grasp_check': {'object_in_hand': False, 'finger_tracking_error_rad': 0.0, 'threshold_rad': 0.015}, 'arm': 'right', 'object': 'obj_1', 'bin': 'center', 'grasp_at_m': [0.298, -0.088, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 109.6, 'objects_on_counter': [{'id': 'obj_1', 'side': 'right', 'position_m': [0.306, -0.084], 'point': [758, 694], 'rgb': [223, 216, 82], 'shape_guess': 'lying on its side', 'yaw_deg_guess': None}], 'object_moved_m': [0.008, 0.004], 'object_now': 'obj_1'}
+2026-11-14 17:05:56,781 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:05:56,787 robot_sorter INFO [agent t= 10.44] pick_and_place({'object_id': 'obj_1', 'bin': 'center'})
+2026-11-14 17:05:56,900 robot_sorter INFO [robot t= 10.44] start pick_and_place obj_1 -> center: grasp and lift (right arm, 4.3 s)
+2026-11-14 17:06:09,714 robot_sorter INFO [robot t= 15.20] pick_and_place obj_1 -> center: grasp and lift: completed
+2026-11-14 17:06:09,727 robot_sorter INFO [robot t= 15.20] start pick_and_place obj_1 -> center: missed, back home (both arm, 2.6 s)
+2026-11-14 17:06:17,612 robot_sorter INFO [robot t= 18.07] pick_and_place obj_1 -> center: missed, back home: completed
+2026-11-14 17:06:17,619 robot_sorter INFO [robot t= 18.07] start arms aside (both arm, 0.9 s)
+2026-11-14 17:06:21,432 robot_sorter INFO [robot t= 19.50] arms aside: completed
+2026-11-14 17:06:21,478 robot_sorter INFO [agent t= 19.50] pick_and_place -> {'status': 'missed', 'reason': 'the hand closed on nothing (finger sensors): the object is still on the counter. The arm is back home.', 'grasp_check': {'object_in_hand': False, 'finger_tracking_error_rad': 0.0, 'threshold_rad': 0.015}, 'arm': 'right', 'object': 'obj_1', 'bin': 'center', 'grasp_at_m': [0.306, -0.084, 0.049], 'grasp': {'grip': 'plain pinch'}, 'holding': 'nothing', 'time_left_s': 100.5, 'objects_on_counter': [{'id': 'obj_1', 'side': 'right', 'position_m': [0.283, -0.103], 'point': [806, 741], 'rgb': [201, 191, 61], 'shape_guess': 'triangle', 'yaw_deg_guess': 14.8}], 'object_moved_m': [-0.023, -0.019], 'object_now': 'obj_1'}
+2026-11-14 17:06:21,479 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:06:21,486 robot_sorter INFO [agent t= 19.50] done({'summary': "bench: tries per object {'obj_1': 2}"})
+2026-11-14 17:06:21,487 robot_sorter INFO [robot t= 19.50] done: bench: tries per object {'obj_1': 2}
+2026-11-14 17:06:21,487 robot_sorter INFO [agent t= 19.50] done -> {'status': 'episode ended', 'moves': 7, 'holding': 'nothing', 'time_left_s': 100.5}
+2026-11-14 17:06:21,487 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:06:21,494 robot_sorter INFO [agent t= 19.50] says: Bench episode finished.
+2026-11-14 17:06:21,494 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:06:27,833 robot_sorter INFO [agent] episode end: 7 moves [{'t': 0.57, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 2.6, 'move': 'pick_and_place obj_1 -> center: grasp and lift', 'arm': 'right', 'outcome': 'completed'}, {'t': 7.14, 'move': 'pick_and_place obj_1 -> center: missed, back home', 'arm': None, 'outcome': 'completed'}, {'t': 9.0, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}, {'t': 10.44, 'move': 'pick_and_place obj_1 -> center: grasp and lift', 'arm': 'right', 'outcome': 'completed'}, {'t': 15.2, 'move': 'pick_and_place obj_1 -> center: missed, back home', 'arm': None, 'outcome': 'completed'}, {'t': 18.07, 'move': 'arms aside', 'arm': None, 'outcome': 'completed'}]; stats {'model_errors': 0, 'runs': 5}
+2026-11-14 17:06:27,834 robot_sorter INFO [agent] reset task=sort_fixed seed=5: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 17:06:29,410 robot_sorter INFO [agent t=  0.57] look({})
+2026-11-14 17:06:29,418 robot_sorter INFO [robot t=  0.57] start arms aside (both arm, 0.9 s)
+2026-11-14 17:06:33,481 robot_sorter INFO [robot t=  2.00] arms aside: completed
+2026-11-14 17:06:34,216 robot_sorter INFO [robot t=  2.20] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.76, walls 0.92
+2026-11-14 17:06:34,262 robot_sorter INFO [agent t=  2.20] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.294, 0.087], 'point': [779, 356], 'rgb': [83, 122, 185], 'shape_guess': 'triangle', 'yaw_deg_guess': -10.0}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.8}
+2026-11-14 17:06:34,263 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:06:34,272 robot_sorter INFO [agent t=  2.20] pick_and_place({'object_id': 'obj_1', 'bin': 'right'})
+2026-11-14 17:06:39,742 robot_sorter INFO [agent t=  4.20] pick_and_place -> {'status': 'failed', 'reason': "no safe plan: no grip on the triangle's flat faces (105 deg): only the plain pinch can be planned from here, and it does not hold a triangular prism", 'object': 'obj_1', 'bin': 'right', 'grasp_at_m': [0.298, 0.092, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 115.8}
+2026-11-14 17:06:39,743 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:06:39,749 robot_sorter INFO [agent t=  4.20] hand_over({'object_id': 'obj_1', 'bin': 'right'})
+2026-11-14 17:06:40,068 robot_sorter INFO [robot t=  4.40] start hand_over obj_1 (for right) (left arm, 10.5 s)
+2026-11-14 17:07:09,321 robot_sorter INFO [robot t= 15.10] hand_over obj_1 (for right): completed
+2026-11-14 17:07:09,328 robot_sorter INFO [robot t= 15.10] start arms aside (both arm, 0.9 s)
+2026-11-14 17:07:13,361 robot_sorter INFO [robot t= 16.54] arms aside: completed
+2026-11-14 17:07:13,406 robot_sorter INFO [agent t= 16.54] hand_over -> {'status': 'completed', 'arm': 'left', 'seconds': 10.5, 'object': 'obj_1', 'bin': 'right', 'holding': 'nothing', 'time_left_s': 104.9, 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.282, 0.004], 'point': [807, 523], 'rgb': [83, 125, 190], 'shape_guess': 'triangle', 'yaw_deg_guess': 48.9}]}
+2026-11-14 17:07:13,407 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:07:13,414 robot_sorter INFO [agent t= 16.54] pick_and_place({'object_id': 'obj_1', 'bin': 'right'})
+2026-11-14 17:07:13,747 robot_sorter INFO [robot t= 16.54] start pick_and_place obj_1 -> right: grasp and lift (right arm, 5.1 s)
+2026-11-14 17:07:28,885 robot_sorter INFO [robot t= 22.17] pick_and_place obj_1 -> right: grasp and lift: completed
+2026-11-14 17:07:28,886 robot_sorter INFO [robot t= 22.17] start pick_and_place obj_1 -> right: carry and release (right arm, 4.1 s)
+2026-11-14 17:07:40,560 robot_sorter INFO [robot t= 26.47] pick_and_place obj_1 -> right: carry and release: completed
+2026-11-14 17:07:40,567 robot_sorter INFO [robot t= 26.47] start arms aside (both arm, 0.9 s)
+2026-11-14 17:07:44,445 robot_sorter INFO [robot t= 27.90] arms aside: completed
+2026-11-14 17:07:44,488 robot_sorter INFO [agent t= 27.90] pick_and_place -> {'status': 'completed', 'arm': 'right', 'seconds': 9.2, 'object': 'obj_1', 'bin': 'right', 'grasp_at_m': [0.286, 0.009, 0.054], 'grasp': {'grip': 'flat faces of the triangle', 'finger_to_apex_deg': 105.0}, 'holding': 'nothing', 'time_left_s': 93.5, 'grasp_check': {'object_in_hand': True, 'finger_tracking_error_rad': 0.025, 'threshold_rad': 0.015}, 'objects_on_counter': []}
+2026-11-14 17:07:44,488 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:07:44,496 robot_sorter INFO [agent t= 27.90] done({'summary': "bench: tries per object {'obj_1': 2}"})
+2026-11-14 17:07:44,496 robot_sorter INFO [robot t= 27.90] done: bench: tries per object {'obj_1': 2}
+2026-11-14 17:07:44,497 robot_sorter INFO [agent t= 27.90] done -> {'status': 'episode ended', 'moves': 6, 'holding': 'nothing', 'time_left_s': 92.1}
+2026-11-14 17:07:44,497 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:07:44,503 robot_sorter INFO [agent t= 27.90] says: Bench episode finished.
+2026-11-14 17:07:44,504 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench

@@ -1,0 +1,19 @@
+{"wall": 1794675987.83, "kind": "reset", "task": "sort_fixed", "seed": 5, "instruction": "Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.", "model": "adk/bench"}
+{"wall": 1794675989.41, "kind": "call", "t": 0.57, "tool": "look", "args": {}}
+{"wall": 1794675993.48, "kind": "motion", "t": 0.57, "t_end": 2.0, "move": "arms aside", "arm": null, "outcome": "completed"}
+{"wall": 1794675994.22, "kind": "head_pose_fit", "t": 2.2, "used": true, "summary": "tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.76, walls 0.92"}
+{"wall": 1794675994.26, "kind": "result", "t": 2.2, "tool": "look", "result": {"status": "ok", "objects_on_counter": [{"id": "obj_1", "side": "left", "position_m": [0.294, 0.087], "point": [779, 356], "rgb": [83, 122, 185], "shape_guess": "triangle", "yaw_deg_guess": -10.0}], "bins": {"left": [0.505, 0.26], "center": [0.505, 0.0], "right": [0.505, -0.26]}, "instruction": "Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.", "holding": "nothing", "time_left_s": 117.8}}
+{"wall": 1794675994.27, "kind": "call", "t": 2.2, "tool": "pick_and_place", "args": {"object_id": "obj_1", "bin": "right"}}
+{"wall": 1794675999.74, "kind": "result", "t": 4.2, "tool": "pick_and_place", "result": {"status": "failed", "reason": "no safe plan: no grip on the triangle's flat faces (105 deg): only the plain pinch can be planned from here, and it does not hold a triangular prism", "object": "obj_1", "bin": "right", "grasp_at_m": [0.298, 0.092, 0.054], "grasp": {"grip": "flat faces of the triangle", "finger_to_apex_deg": 105.0}, "holding": "nothing", "time_left_s": 115.8}}
+{"wall": 1794675999.75, "kind": "call", "t": 4.2, "tool": "hand_over", "args": {"object_id": "obj_1", "bin": "right"}}
+{"wall": 1794676029.32, "kind": "motion", "t": 4.4, "t_end": 15.1, "move": "hand_over obj_1 (for right)", "arm": "left", "outcome": "completed"}
+{"wall": 1794676033.36, "kind": "motion", "t": 15.1, "t_end": 16.54, "move": "arms aside", "arm": null, "outcome": "completed"}
+{"wall": 1794676033.41, "kind": "result", "t": 16.54, "tool": "hand_over", "result": {"status": "completed", "arm": "left", "seconds": 10.5, "object": "obj_1", "bin": "right", "holding": "nothing", "time_left_s": 104.9, "objects_on_counter": [{"id": "obj_1", "side": "left", "position_m": [0.282, 0.004], "point": [807, 523], "rgb": [83, 125, 190], "shape_guess": "triangle", "yaw_deg_guess": 48.9}]}}
+{"wall": 1794676033.41, "kind": "call", "t": 16.54, "tool": "pick_and_place", "args": {"object_id": "obj_1", "bin": "right"}}
+{"wall": 1794676048.89, "kind": "motion", "t": 16.54, "t_end": 22.17, "move": "pick_and_place obj_1 -> right: grasp and lift", "arm": "right", "outcome": "completed"}
+{"wall": 1794676060.56, "kind": "motion", "t": 22.17, "t_end": 26.47, "move": "pick_and_place obj_1 -> right: carry and release", "arm": "right", "outcome": "completed"}
+{"wall": 1794676064.45, "kind": "motion", "t": 26.47, "t_end": 27.9, "move": "arms aside", "arm": null, "outcome": "completed"}
+{"wall": 1794676064.49, "kind": "result", "t": 27.9, "tool": "pick_and_place", "result": {"status": "completed", "arm": "right", "seconds": 9.2, "object": "obj_1", "bin": "right", "grasp_at_m": [0.286, 0.009, 0.054], "grasp": {"grip": "flat faces of the triangle", "finger_to_apex_deg": 105.0}, "holding": "nothing", "time_left_s": 93.5, "grasp_check": {"object_in_hand": true, "finger_tracking_error_rad": 0.025, "threshold_rad": 0.015}, "objects_on_counter": []}}
+{"wall": 1794676064.5, "kind": "call", "t": 27.9, "tool": "done", "args": {"summary": "bench: tries per object {'obj_1': 2}"}}
+{"wall": 1794676064.5, "kind": "result", "t": 27.9, "tool": "done", "result": {"status": "episode ended", "moves": 6, "holding": "nothing", "time_left_s": 92.1}}
+{"wall": 1794676064.5, "kind": "says", "t": 27.9, "text": "Bench episode finished."}

@@ -59,8 +59,12 @@ How to work, one step at a time (look, act, check, repeat):
    +40; not for triangular prisms). A triangular prism is always gripped on its flat faces and the tool tries a
    different grip angle after each miss, so for a prism simply call again. Keep trying while time is left and
    there is nothing better to do, but stop if the misses push the object towards the edge of the counter.
-4. If pick_and_place fails with no safe plan because the bin is on the far side of the body, call hand_over for
-   that object and then pick_and_place it. Do not call hand_over before pick_and_place has failed.
+4. "failed: no safe plan" means nothing moved; the reason names what was in the way. Find a plan that works
+   before moving: call choose_arm to see what each arm can do, and check_plan with variations (several calls in
+   one turn are fine): the other arm, max_tilt_deg 50, a pregrasp_offset_m away from the bin rim or the body that
+   was in the way, a different finger_direction_deg. Run the one that is ok with pick_and_place and the same
+   arguments. If only the grasp is possible (the bin is out of that arm's reach), call hand_over and then
+   pick_and_place. If nothing works, leave the object and go on.
 5. When nothing useful is left, call done.
 
 Rules:
