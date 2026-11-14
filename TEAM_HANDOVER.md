@@ -1,4 +1,4 @@
-# Junction 2026, Aaltonomous Humanoid: where we are (Sat 14 Nov, 15:00)
+# Junction 2026, Aaltonomous Humanoid: where we are (Sat 14 Nov, 17:40)
 
 Read this top to bottom once; after that the command list in section 4 is all you need day to day.
 
@@ -42,9 +42,9 @@ start with `adk_agents/README.md`.
 | `submission/server.py`, `submission/Dockerfile` | Our policy server and its image. **The image has never been built** (no Docker on the laptop used so far). |
 | `ORGANIZER_ISSUES.md` | Everything we found wrong or unclear in the organisers' material (A1–A11, B–E). Send them this. |
 | `sim/out/` | Videos and frame sheets: the oracle with all three cameras, and our checkpoints in the sim. |
-| `agent/` | **Current focus.** Oracle-based skills as importable tools, and a loop in which a Gemini model looks at the camera images and calls them. Start with `agent/README.md`. |
+| `agent/` | The oracle-based skills (`agent/skills/`), which the ADK agent's tools call, and an earlier hand-written Gemini loop (`agent/runtime/`) that has never been run and is superseded by `adk_agents/`. |
 | `agent/AI_STUDIO_PROMPT.md` | Prompt for Google AI Studio to review and extend the agent. |
-| `adk_agents/robot_sorter/` | The same skills as tools of a Google ADK agent (`adk web adk_agents`). Start with `adk_agents/README.md`. Tested offline only; needs the API key in its `.env`. |
+| `adk_agents/robot_sorter/` | **Current focus.** A Google ADK agent: `gemini-4-hydrogen`, through the Gemini API with the key in its `.env`, looks at the camera images and calls the skills as tools. It runs in the Isaac sim on Modal (`--action eval-adk`); scores are in section 5. Start with `adk_agents/README.md`. |
 
 Everything heavy lives on Modal volumes, not on a laptop: `aalto-data` (datasets, raw recordings), `aalto-runs`
 (checkpoints), `aalto-sim-out` (sim results and videos), `aalto-kitcache`, `aalto-hf-cache`.
@@ -122,10 +122,13 @@ Not learned, same evaluator, seeds 1000–1004 (5 episodes, 20 objects), gate pa
 | Organisers' classical baseline (camera colour blobs + their planner; their reference submission) | 16 of 20 | 3.2 |
 | Our skill library, rule-based chooser, camera positions (`agent/`, no model) | 16 of 20 | 3.2 |
 | Our skill library, rule-based chooser, exact simulator positions | 16 of 20 | 3.2 |
-| Gemini-driven loop (`agent/runtime/agent_policy.py`) | not run yet: needs the API key | |
+| **ADK agent, `gemini-4-hydrogen`** (`adk_agents/`), seeds 1000–1002, run `adk-1` | 10 of 12 | 3.33 |
+| ADK agent, `sort_language` (2 points per object), seeds 1000–1002, run `adk-3-lang` | 9 of 11 | 6.0 |
+| Earlier hand-written Gemini loop (`agent/runtime/agent_policy.py`) | never run; superseded by the ADK agent | |
 
-So the planner-based route is at 80 % in the sim today, the neural policy at about 33 %. The team decision (Sat
-afternoon) is to build on the skills with a Gemini agent and not to depend on training.
+So the planner-based route is at 80 % in the sim, the Gemini agent on top of it at 82-83 % (it retries missed
+grasps and reads the instruction itself), the neural policy at about 33 %. Every agent run above made real Gemini API
+calls; none failed.
 
 The neural policy now runs the full motion (reach, grasp, lift, carry, release, return) and keeps working for the whole
 episode. What still fails: grasps miss by a centimetre or two, and red objects tend to land in the centre bin.
@@ -161,9 +164,10 @@ episode. What still fails: grasps miss by a centimetre or two, and red objects t
 
 ## 8. Open problems and ideas, most useful first
 
-0. **Get the Gemini loop running in the sim.** `agent/README.md`, "First steps with the key": one test call to
-   each model, then `--action eval-agent`. The API adapters (`agent/runtime/gemini.py`) were written from the
-   documentation and have never been run; everything around them is tested offline with stand-in models.
+0. **The ADK agent on varied scenes.** In the nominal scene it sorts 82-83 % of the objects, never into a wrong
+   bin, gate passed. With the real object colours (yellow, purple, orange), varied shades, lighting and placements
+   (`sim/scene_variant.py`) the first runs are much worse and include wrong bins; the cause is not known yet.
+   Runs are fetched with `modal volume get aalto-sim-out <tag> sim_out`; every decision is in `policy.log`.
 1. **More data and longer training.** Scores only started moving after 4,000–5,000 steps; 125 episodes is small.
 2. **Tell the model which object and which bin.** Rung 1's instruction is the same sentence in every episode, so
    it carries no information and the model has to work out "which object next, which bin" from pixels alone. The
