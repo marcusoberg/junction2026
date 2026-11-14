@@ -1,0 +1,1 @@
+{"t": 69.17000000000002, "detections": [{"id": "obj_3", "side": "right", "position_m": [0.247, -0.038], "point": [917, 629], "rgb": [199, 189, 64], "shape_guess": "triangle", "yaw_deg_guess": 50.6}, {"id": "obj_4", "side": "right", "position_m": [0.288, -0.118], "point": [818, 784], "rgb": [193, 78, 78], "shape_guess": "lying on its side", "yaw_deg_guess": null}]}

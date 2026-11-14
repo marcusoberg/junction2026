@@ -5,6 +5,7 @@ container's copy of the organisers' files in place; the checkout on the laptop i
 evaluator and the scoring all read the same edited files, so they stay consistent with each other.
 
     python scene_variant.py --colors real --dr wide --placement wide --instructions shape
+    python scene_variant.py                      # no arguments: back to the organisers' nominal scene
 
   --colors real        the foam blocks the organisers announced on Discord (14 Nov): yellow, purple, orange, with
                        their real sort_fixed mapping yellow -> left, purple -> center, orange -> right.
@@ -119,7 +120,13 @@ def main():
     a = ap.parse_args()
     pkg = REPO / "aaltonomous"
     scene, tasks = pkg / "scene" / "scene.yaml", pkg / "interface" / "tasks.py"
-    s, t = scene.read_text(), tasks.read_text()
+    # Always start from the organisers' files as they were: a sim container is reused for the next job of a sweep,
+    # and a variant applied on top of another variant (or left behind for a nominal job) would be a different scene.
+    for f in (scene, tasks):
+        orig = f.with_name(f.name + ".orig")
+        if not orig.exists():
+            orig.write_text(f.read_text())
+    s, t = (scene.with_name(scene.name + ".orig")).read_text(), (tasks.with_name(tasks.name + ".orig")).read_text()
     if a.colors:
         cols = COLORS[a.colors]
         block = "".join(f"    {name}: {rgb}\n" for name, rgb in cols.items())

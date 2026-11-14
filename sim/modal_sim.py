@@ -25,6 +25,8 @@ OMNI_KIT_ACCEPT_EULA=YES).
                                                    # ... on a varied scene: see sim/scene_variant.py
     modal run --detach sim/modal_sim.py --action sweep --tag s1 --sweep "nominal:sort_fixed:1000-1004, venue:sort_fixed:2000-2004"
                                                    # FAST: one app, every seed in its own sim at once, one table (run_sweep)
+    modal run sim/modal_sim.py --action grasp-bench --bench "--shapes triangle --yaws -60,-30,0,30,60" --tag gb1
+                                                   # single-object grasp trials of our tools, scripted, no model calls
     modal run sim/modal_sim.py --action sh --script "aalto sim && aalto eval --policy oracle --task sort_language --trials 2"
 Demonstrations for training: the oracle sorts, we record every tick (sim/gen_demos.py), then convert to a LeRobot
 dataset in the format of the real-robot drop (sim/to_dataset.py). --shards sims run in parallel, one L40S each;
@@ -103,6 +105,7 @@ image = (
     .add_local_file(HERE.parent / "submission/server.py", "/opt/submission/server.py")
     .add_local_file(HERE / "gen_demos.py", "/opt/sim/gen_demos.py")
     .add_local_file(HERE / "scene_variant.py", "/opt/sim/scene_variant.py")
+    .add_local_file(HERE / "grasp_bench.py", "/opt/sim/grasp_bench.py")
     .add_local_dir(HERE.parent / "agent", "/opt/agent_pkg/agent", ignore=["**/__pycache__", "**/*.pyc", "**/*.md"])
     # The ADK agent (adk_agents/robot_sorter). Its .env holds the API key and must not leave the laptop: the key
     # comes from the Modal secret `gemini` instead.
@@ -303,9 +306,8 @@ def run_sweep(spec, tag, task, video, server_env, adk_script_for):
         lo, _, hi = seeds.partition("-")
         variant, dr = SCENES[scene]
         for seed in range(int(lo), int(hi or lo) + 1):
-            script = adk_script_for(eval_task, 1, seed)
-            if variant:
-                script = f"python /opt/sim/scene_variant.py {variant} && " + script
+            # always: with no arguments the script puts the nominal scene back (the container may be a reused one)
+            script = f"python /opt/sim/scene_variant.py {variant} && " + adk_script_for(eval_task, 1, seed)
             jobs.append(((scene, eval_task, seed), (script, f"{tag}/{scene}-{eval_task}-{seed}", dr, task, True)))
     print(f"sweep {tag}: {len(jobs)} episodes, each in its own sim")
     rows, t0 = [], time.monotonic()
@@ -332,7 +334,7 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
          task: str = "Aalto-Sort-G129-Dex3-Joint", ckpt: str = "", eval_task: str = "sort_fixed", video: bool = True,
          name: str = "", shards: int = 1, episodes: int = 2, seed: int = 100000, schema: str = "drop1",
          max_idle: int = 15, mode: str = "segments", background: bool = False, server_env: str = "",
-         gen_args: str = "", variant: str = "", sweep: str = ""):
+         gen_args: str = "", variant: str = "", sweep: str = "", bench: str = ""):
     # --background (with `modal run --detach`): start the job and return, so it does not depend on this computer
     # staying awake and online. Results land on the volumes as usual.
     if action in ("datagen", "convert"):
@@ -383,6 +385,8 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     #       placements, shape-based instructions. With "--dr wide" in the variant also pass --dr wide.
     def adk_script_for(eval_task, trials, seed):
         return (
+                      # a container is reused for the next job of a sweep: no server, trace or results left over
+                      f"pkill -f robot_sorter.serve; rm -rf /tmp/agent_trace /tmp/policy.log {APP_DIR}/runs/eval; sleep 1; "
                       f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
                       f"-m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
                       f"for i in $(seq 60); do grep -q ' ready\\|Traceback\\|Error' /tmp/policy.log && break; sleep 2; done; "
@@ -394,8 +398,17 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     adk_script = adk_script_for(eval_task, trials, seed)
     if action == "sweep":
         return run_sweep(sweep, tag or f"sweep-{time.strftime('%m%d-%H%M')}", task, video, server_env, adk_script_for)
+    # grasp-bench: single-object grasp trials of OUR tools, scripted agent, no model calls (sim/grasp_bench.py).
+    #   --bench "--shapes triangle --yaws -60,-30,0,30,60 --xs 0.30,0.45,0.60"
+    bench_script = (f"pkill -f robot_sorter.serve; rm -rf /tmp/agent_trace /tmp/policy.log; python /opt/sim/scene_variant.py {variant}; "
+                    f"(ROBOT_AGENT_MODEL=bench ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents "
+                    f"/opt/adk/bin/python -m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
+                    f"for i in $(seq 60); do grep -q ' ready\\|Traceback' /tmp/policy.log && break; sleep 2; done; "
+                    f"python /opt/sim/grasp_bench.py {bench}; rc=$?; mkdir -p {APP_DIR}/runs && cp /tmp/grasp_bench.json {APP_DIR}/runs/ 2>/dev/null; "
+                    f"grep 'Traceback' -A8 /tmp/policy.log | tail -20; exit $rc")
     scripts = {
         "boot": "aalto sim && aalto check; aalto snap",
+        "grasp-bench": bench_script,
         "eval-skills": skills,
         "eval-agent": agent_script,
         "eval-adk": adk_script,
@@ -406,7 +419,7 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     if action not in scripts or not scripts[action]:
         raise SystemExit("--action boot | baseline | eval-model --ckpt <run>/checkpoints/<step> | eval-skills | eval-agent | eval-adk | sh --script '...' "
                          "| datagen --name <dataset> | convert --name <dataset>")
-    if variant:                    # edit the container's copy of the scene before anything reads it
+    if variant or action == "eval-adk":      # edit (or restore) the container's copy of the scene before anything reads it
         scripts[action] = f"python /opt/sim/scene_variant.py {variant} && " + scripts[action]
     tag = tag or f"{action}-{time.strftime('%m%d-%H%M%S')}"
     if action == "eval-adk":       # the key and model come from the agent's own .env, read here and never stored

@@ -39,7 +39,10 @@ class AdkPolicy(Policy):
     """The organisers' Policy interface: reset(instruction) starts an agent episode, act(obs) hands out ticks."""
 
     def __init__(self, agent=None, log_fn=None):
-        from .agent import root_agent
+        from .agent import build_agent, root_agent
+        if agent is None and os.environ.get("ROBOT_AGENT_MODEL") == "bench":      # scripted rules, no model calls
+            from .bench import BenchModel
+            agent = build_agent(BenchModel())
         self.agent = agent or root_agent
         self.name = f"adk/{getattr(self.agent.model, 'model', self.agent.model)}"
         self.robot = get_robot()
