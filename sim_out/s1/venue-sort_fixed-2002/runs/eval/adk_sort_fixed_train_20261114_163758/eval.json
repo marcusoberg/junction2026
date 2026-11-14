@@ -1,0 +1,407 @@
+{
+ "summary": {
+  "policy": "ws://localhost:8000",
+  "team": "adk",
+  "task": "sort_fixed",
+  "variant": "train",
+  "dr": {
+   "name": "train",
+   "path": "/opt/aalto/aaltonomous/sim/dr/train.yaml"
+  },
+  "trials": 1,
+  "seeds": [
+   2002
+  ],
+  "score_mean": 1.0,
+  "score_std": 0.0,
+  "score_frac": 0.2,
+  "objects": 5,
+  "objects_correct": 1,
+  "object_success": 0.2,
+  "episodes_all_correct": 0,
+  "outcome_counts": {
+   "correct": 1,
+   "counter": 4
+  },
+  "end_reasons": {
+   "done": 1
+  },
+  "safety_clipped_steps_total": 0,
+  "safety_clipped_steps_max": 0,
+  "effective_hz_min": 30.0,
+  "command_hz_min": 29.99,
+  "policy_hz_rt_min": 65.14,
+  "clock": "sim",
+  "rtf_min": 0.277,
+  "rtf_mean": 0.277,
+  "gate": {
+   "passed": true,
+   "failed_trials": [],
+   "max_clips": 0,
+   "min_hz": 27.0
+  }
+ },
+ "trials": [
+  {
+   "episode": 0,
+   "seed": 2002,
+   "instruction": "Put the yellow objects in the left bin, the purple objects in the center bin and the orange objects in the right bin.",
+   "end_reason": "done",
+   "ticks": 2444,
+   "hold_ticks": 1,
+   "wait_ticks": 1,
+   "wall_s": 294.096,
+   "clock": "sim",
+   "sim_s": 81.47,
+   "rtf": 0.277,
+   "effective_hz": 30.0,
+   "command_hz": 29.99,
+   "command_hz_wall": 8.31,
+   "policy_calls": 298,
+   "latency_ms_mean": 125.86,
+   "latency_ms_max": 237.45,
+   "ready_frac": 0.9996,
+   "policy_hz_rt": 65.14,
+   "safety": {
+    "steps": 2444,
+    "clipped_steps": 0,
+    "mode": "ok",
+    "counts": {}
+   },
+   "success": null,
+   "task": "sort_fixed",
+   "variant": "train",
+   "layout": [
+    {
+     "color": "orange",
+     "x": 0.391,
+     "y": 0.187,
+     "yaw": 0.41,
+     "shape": "triangle"
+    },
+    {
+     "color": "orange",
+     "x": 0.616,
+     "y": 0.136,
+     "yaw": 0.314,
+     "shape": "triangle"
+    },
+    {
+     "color": "purple",
+     "x": 0.471,
+     "y": 0.13,
+     "yaw": -0.749,
+     "shape": "cube"
+    },
+    {
+     "color": "yellow",
+     "x": 0.29,
+     "y": 0.16,
+     "yaw": 0.52,
+     "shape": "triangle"
+    },
+    {
+     "color": "yellow",
+     "x": 0.545,
+     "y": 0.188,
+     "yaw": -0.271,
+     "shape": "triangle"
+    }
+   ],
+   "mapping": {
+    "yellow": "left",
+    "purple": "center",
+    "orange": "right"
+   },
+   "outcomes": [
+    {
+     "name": "obj_purple_cube_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_yellow_triangle_0",
+     "outcome": "counter"
+    },
+    {
+     "name": "obj_yellow_triangle_1",
+     "outcome": "counter"
+    },
+    {
+     "name": "obj_orange_triangle_0",
+     "outcome": "counter"
+    },
+    {
+     "name": "obj_orange_triangle_1",
+     "outcome": "counter"
+    }
+   ],
+   "score": 1,
+   "max_score": 5,
+   "n_objects": 5,
+   "n_correct": 1,
+   "all_correct": false,
+   "settle_s": 0.01,
+   "episode_wall_s": 294.2,
+   "home_err": 0.012,
+   "final_objects": [
+    {
+     "name": "obj_purple_cube_0",
+     "pos": [
+      0.44789,
+      0.01042,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_triangle_0",
+     "pos": [
+      0.29608,
+      -0.13352,
+      0.03226
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_triangle_1",
+     "pos": [
+      0.31128,
+      0.10167,
+      0.03226
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_orange_triangle_0",
+     "pos": [
+      0.28288,
+      -0.0257,
+      0.03226
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_orange_triangle_1",
+     "pos": [
+      0.27432,
+      0.16259,
+      0.03226
+     ],
+     "speed": 0.0
+    }
+   ],
+   "dr_params": {
+    "name": "train",
+    "seed": 2002,
+    "lighting": {
+     "key_intensity_scale": 0.882913034358601,
+     "key_pos_offset": [
+      -0.3340285605676705,
+      0.3015781900754251,
+      0.07393071152592323
+     ],
+     "key_rgb": [
+      0.9334984155156137,
+      1.0659449689912075,
+      0.996524211705917
+     ],
+     "dome_intensity_scale": 1.010793477716252,
+     "dome_rgb": [
+      0.9785682520262223,
+      0.9953749097795372,
+      1.0266043487421475
+     ]
+    },
+    "textures": {
+     "mat_scale": [
+      1.092073417019345,
+      1.1547634171220966,
+      1.1425988942314782
+     ],
+     "mat_bias": 0.014624080302562521,
+     "counter_rgb": [
+      0.9321091445010271,
+      1.1290546325831041,
+      0.908204099543207
+     ],
+     "bin_rgb": {
+      "left": [
+       1.0471823106410758,
+       1.0454794185472491,
+       1.07319227687281
+      ],
+      "center": [
+       1.0782638716016937,
+       0.995853392367769,
+       0.9929040207999058
+      ],
+      "right": [
+       1.0774813613174201,
+       0.9577167752351002,
+       0.9929981652055063
+      ]
+     }
+    },
+    "objects": {
+     "obj_yellow_cube_0": {
+      "dh": 0.01305270949794134,
+      "s": 0.9172430939871483,
+      "v": 0.9950063509555782,
+      "mass_scale": 1.440255344679754,
+      "friction_scale": 1.0866550247544984
+     },
+     "obj_yellow_cube_1": {
+      "dh": -0.005891795427079027,
+      "s": 1.0293437165483352,
+      "v": 0.8319239199567868,
+      "mass_scale": 1.0815403623217912,
+      "friction_scale": 0.9244853541689815
+     },
+     "obj_purple_cube_0": {
+      "dh": -0.005727172602125541,
+      "s": 0.9542107894771414,
+      "v": 0.9104968609520462,
+      "mass_scale": 0.7653689589530529,
+      "friction_scale": 0.9861097239585103
+     },
+     "obj_purple_cube_1": {
+      "dh": 0.019195016528237584,
+      "s": 1.0725889578787635,
+      "v": 1.012821383086436,
+      "mass_scale": 1.3901434439896565,
+      "friction_scale": 1.0604852678853987
+     },
+     "obj_orange_cube_0": {
+      "dh": -0.004701786101186095,
+      "s": 0.8201387279348881,
+      "v": 1.0468147210823733,
+      "mass_scale": 0.8858827364490944,
+      "friction_scale": 0.9275339085594105
+     },
+     "obj_orange_cube_1": {
+      "dh": -0.0059998760522720525,
+      "s": 1.0436277310377617,
+      "v": 0.8169469896388403,
+      "mass_scale": 1.3867064046299364,
+      "friction_scale": 0.7900605229145888
+     },
+     "obj_yellow_cylinder_0": {
+      "dh": 0.012602001504600172,
+      "s": 0.8007561547635014,
+      "v": 1.0003859288113857,
+      "mass_scale": 0.9506416900109301,
+      "friction_scale": 1.0831499147575074
+     },
+     "obj_yellow_cylinder_1": {
+      "dh": -0.013121223218484546,
+      "s": 1.1354485351298447,
+      "v": 0.9727429485727869,
+      "mass_scale": 1.3094013228597763,
+      "friction_scale": 1.0058442512825922
+     },
+     "obj_purple_cylinder_0": {
+      "dh": -0.00539230055127332,
+      "s": 1.053490566782104,
+      "v": 1.0047625042507085,
+      "mass_scale": 1.2034289211024132,
+      "friction_scale": 1.058221573751843
+     },
+     "obj_purple_cylinder_1": {
+      "dh": -0.019134290109722247,
+      "s": 0.8852481653533414,
+      "v": 0.9165422431688721,
+      "mass_scale": 1.2232532881968017,
+      "friction_scale": 0.9172686396312586
+     },
+     "obj_orange_cylinder_0": {
+      "dh": -0.018581121852698605,
+      "s": 1.0687398224471658,
+      "v": 1.0048016121332717,
+      "mass_scale": 1.3002307702233913,
+      "friction_scale": 0.8428943263170235
+     },
+     "obj_orange_cylinder_1": {
+      "dh": 0.011121949154115938,
+      "s": 1.1457811030422729,
+      "v": 1.0515891974064893,
+      "mass_scale": 0.8995704129961026,
+      "friction_scale": 0.7860562202951905
+     },
+     "obj_yellow_triangle_0": {
+      "dh": 0.008986278388938486,
+      "s": 1.0550386068472424,
+      "v": 1.099327111778565,
+      "mass_scale": 0.9923627015015328,
+      "friction_scale": 0.8299571384977171
+     },
+     "obj_yellow_triangle_1": {
+      "dh": -0.01886814260861618,
+      "s": 1.139349516214267,
+      "v": 1.007911898226623,
+      "mass_scale": 1.3264798895963335,
+      "friction_scale": 0.8585265158817292
+     },
+     "obj_purple_triangle_0": {
+      "dh": 0.008463735471946104,
+      "s": 0.8906656306752103,
+      "v": 1.0668606274346637,
+      "mass_scale": 1.4697138542646149,
+      "friction_scale": 0.9064328445732579
+     },
+     "obj_purple_triangle_1": {
+      "dh": -0.0031342653007631754,
+      "s": 1.008852479663177,
+      "v": 0.9626451341819416,
+      "mass_scale": 1.2755245643323554,
+      "friction_scale": 0.8540912042605476
+     },
+     "obj_orange_triangle_0": {
+      "dh": 0.008285583217300451,
+      "s": 1.1362517283659108,
+      "v": 0.8089228930024208,
+      "mass_scale": 1.4830253791149755,
+      "friction_scale": 0.9893387470434972
+     },
+     "obj_orange_triangle_1": {
+      "dh": -0.012869437847474732,
+      "s": 1.0294474681466188,
+      "v": 1.0202083565662539,
+      "mass_scale": 1.3383378499513807,
+      "friction_scale": 0.8901242911862457
+     }
+    },
+    "pose": {
+     "xy_jitter": 0.005,
+     "yaw_jitter": 0.08726646259971647,
+     "stream_seed": 320518824
+    },
+    "camera": {
+     "rgb_noise_std": 3.0,
+     "rgb_gain": 1.0459474029608562,
+     "depth_noise_mm": 1.0,
+     "depth_noise_rel": 0.002,
+     "depth_hole_frac": 0.01,
+     "pos_offset": [
+      -0.0022950171367562876,
+      0.004794546098770912,
+      0.0014429189152319836
+     ],
+     "rot_offset_rad": [
+      0.00018862600116684863,
+      0.002497565055874399,
+      0.01602911228209913
+     ],
+     "stream_seed": 1502134032
+    },
+    "applied": {
+     "lighting": true,
+     "colors": true,
+     "physics": true,
+     "camera_pose": true
+    }
+   },
+   "gate_ok": true,
+   "gate_why": []
+  }
+ ]
+}

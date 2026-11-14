@@ -76,11 +76,10 @@ def episode(job):
         async def tool(*args, **kw):
             name = real.__name__
             if name == "look":
-                objects = remaining()
-                robot.view_requests.append({"camera": "head", "region": None, "mark_objects": True})
-                return T._result("ok", objects_on_counter=objects, instruction=robot.instruction,
-                                 bins={b: [round(float(x), 3) for x in ctx.planner.bin_xy(b)] for b in ctx.bins()})
-            if name in ("view_camera", "read_proprioception"):
+                res = await T._look_result(robot)              # the real thing, Decisions API labels included
+                res["objects_on_counter"] = [o for o in res["objects_on_counter"] if o["id"] not in gone]
+                return res
+            if name in ("view_camera", "read_proprioception", "ask_gemini"):
                 return await real(*args, **kw)
             if name == "done":
                 said.append(kw.get("summary", ""))

@@ -42,14 +42,14 @@ still while you think, so do not spend turns on things you do not need. When you
 
 What you see: every request ends with a live view: the current head camera image and the robot state (what is
 held, how far each hand is closed, time left). It is always current; older images are not kept. For more, call
-view_camera (wrist cameras, a zoomed region, depth, object ids drawn on the image) or read_proprioception (joint
-sensors: where the hands are, whether a hand closed on something).
+view_camera (wrist cameras, a zoomed region, depth, object ids drawn on the image), ask_gemini (one closed
+question about a camera image, answered in about a second) or read_proprioception (joint sensors: where the
+hands are, whether a hand closed on something).
 
 How to work, one step at a time (look, act, check, repeat):
-1. Call look. It lists the objects on the counter with ids, positions and the colour the camera measured (rgb),
-   and your next live view shows the head image with every id drawn on its object. Decide each object's colour
-   and shape from that image (zoom in with view_camera when two colours are close, e.g. orange and yellow, or
-   when the instruction is about shapes), and check whether look missed an object you can see.
+1. Call look. It lists the objects on the counter with ids, positions, a colour and shape label and the raw
+   colour the camera measured, and your next live view shows the head image with every id drawn on its object.
+   Check the labels against that image, and whether look missed an object you can see.
 2. Pick the object that is nearest its bin and call pick_and_place for it. Every result lists the objects that
    are on the counter after the move, so you can go straight on to the next object.
 3. Read the status of each move. "completed": the finger sensors felt the object and it was carried to the bin;
@@ -67,12 +67,13 @@ Rules:
 - "failed" means no safe plan was found and nothing moved; the reason says why. Do something different.
 - Sort the easy objects first and come back to a difficult one at the end.
 - The left bin is reachable only with the left arm and the right bin only with the right arm.
-- Colours never look the way they are named. The camera and the light shift and wash them out: what the
-  instruction calls yellow can look pale green-yellow or cream, purple can look blue or lilac, orange can look
-  tan, peach or light brown, red can look pink. Every object on the counter is one of the task's colours, so do
-  not look for an exact match: compare the objects WITH EACH OTHER (the image and the rgb values) and give each
-  one the named colour it is nearest to. Objects of the same colour look alike; the most blue-ish group is the
-  purple (or blue) one, the most red-ish group the orange (or red) one, the most green-yellow one the yellow.
+- Colour and shape: look gives every object a gemini_label, the colour and shape judged by a fast Gemini vision
+  model that compared all the objects in the image, with a confidence. Use it together with the image. The
+  camera and the light wash colours out (yellow can look pale green, purple can look blue, orange can look tan),
+  and every object on the counter is one of the task's colours: so do not look for an exact match, give each
+  object the named colour it is nearest to. When a label's confidence is below about 0.7, or two objects with
+  the same label look different, settle it first: zoom in with view_camera or ask a closed question with
+  ask_gemini.
 - Scoring: an object in the right bin scores; one in a wrong bin or knocked off the counter costs a point; one
   left on the counter scores nothing. So sort every object you can assign. Leave an object only when it could
   equally well be two of the named colours (or shapes) and the bins differ.

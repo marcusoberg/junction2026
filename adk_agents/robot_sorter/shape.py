@@ -72,3 +72,63 @@ def top_face_points(ctx, obs, xyz, radius_m=0.045, band_m=0.006, window_px=60):
     near = np.linalg.norm(P[:, :2] - np.asarray(xyz, float)[:2], axis=1) < radius_m
     top = np.abs(P[:, 2] - float(xyz[2])) <= band_m
     return P[near & top][:, :2]
+
+
+def detect_by_depth(ctx, obs, cell_m=0.0025, min_cells=40):
+    """Objects on the counter from the depth image alone: no colour thresholds of any kind.
+
+    Every depth pixel becomes a 3D point; the points that stand at object height above the counter, on the mat and
+    outside the bins are dropped onto a top-down grid, and each connected patch is one object. Its top face gives
+    the centre, the shape and the rotation; the colour is only MEASURED (for the model to judge), never used to
+    find or split objects. Returns WorldObjects like agent.skills.perception.detect_camera."""
+    import cv2
+    from agent.skills.perception import WorldObject
+    depth, rgb = obs.get("head_depth"), obs["head_rgb"]
+    if depth is None:
+        return []
+    cam, sc = ctx.camera.cam, ctx.scene
+    H = float(sc.object_height())
+    d = depth.astype(float)
+    vv, uu = np.nonzero((d >= 150) & (d <= 2000))
+    P = ctx.cal.pixel_to_pelvis(cam, uu, vv, d[vv, uu])
+    h = P[:, 2] - sc.counter_z
+    pm = sc.pelvis_to_mat(P)
+    W, D = sc.cfg["counter"]["mat_size"]
+    ok = (h >= 0.3 * H) & (h <= 2.0 * H) & (pm[:, 0] >= -0.02) & (pm[:, 0] <= W + 0.02) & (pm[:, 1] >= -0.02) & (pm[:, 1] <= D + 0.02)
+    half = np.asarray(sc.cfg["bins"]["outer_size"], float) / 2 + 0.008
+    for ctr in sc.cfg["bins"]["centers"].values():
+        ok &= ~np.all(np.abs(pm[:, :2] - np.asarray(ctr, float)) <= half, axis=1)
+    P, uu, vv = P[ok], uu[ok], vv[ok]
+    if len(P) < min_cells:
+        return []
+    lo = P[:, :2].min(0) - cell_m
+    ij = np.floor((P[:, :2] - lo) / cell_m).astype(int)
+    grid = np.zeros(ij.max(0) + 2, np.uint8)
+    grid[ij[:, 0], ij[:, 1]] = 255
+    grid = cv2.morphologyEx(grid, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))      # depth holes, sparse far pixels
+    n, lab = cv2.connectedComponents(grid, connectivity=8)
+    which = lab[ij[:, 0], ij[:, 1]]
+    out = []
+    for k in range(1, n):
+        m = which == k
+        if int((lab == k).sum()) < min_cells or m.sum() < 30:
+            continue
+        Q = P[m]
+        z_top = np.percentile(Q[:, 2], 92)
+        top = Q[:, 2] >= z_top - 0.006
+        if top.sum() < 15:
+            continue
+        shape, yaw, centre, feat = classify_top(Q[top][:, :2])
+        xy = centre if centre is not None else Q[top][:, :2].mean(0)
+        if feat.get("long_mm", 0) > 110:                       # far too big for one object (an arm, a tool, a heap)
+            continue
+        pix = rgb[vv[m], uu[m]].astype(float)
+        sat = (pix.max(1) - pix.min(1)) / np.maximum(pix.max(1), 1.0)
+        pix = pix[sat >= np.percentile(sat, 67)]
+        o = WorldObject("?", "object", np.array([xy[0], xy[1], float(np.median(Q[top][:, 2]))]), source="depth",
+                        extra={"uv": (float(np.median(uu[m][top])), float(np.median(vv[m][top]))), "n_px": int(m.sum()),
+                               "shape_seen": shape, "rgb": [int(c) for c in np.median(pix, axis=0)]})
+        o.shape = shape if shape in ("cube", "cylinder", "triangle") else None
+        o.yaw = yaw if o.shape in ("cube", "triangle") else None
+        out.append(o)
+    return out

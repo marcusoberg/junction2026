@@ -121,6 +121,7 @@ class Robot:
             self.objects = {}                  # id -> WorldObject, from the last look
             self.id_count = {}                 # ids handed out, so an id is never reused in an episode
             self.tries = {}                    # object id -> grasps that missed (the next one uses another grip)
+            self.labels = {}                   # object id -> colour / shape label from the Gemini Decisions API
             self.placed = {}                   # bin -> objects we dropped in it (spreads the drop points)
             self.view_requests = []            # camera views the agent asked for; shown with the next model call
             self.pose_fit = None               # head camera pose fit of this episode (see fit_head_camera)

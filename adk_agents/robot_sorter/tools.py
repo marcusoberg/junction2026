@@ -2,6 +2,7 @@
 tools to look through the cameras and read the joint sensors.
 
 Sensing
+    ask_gemini          one closed question about a camera image to the Gemini Decisions API (about a second).
     look                the oracle's "look": which objects are on the counter and where. The oracle reads exact
                         poses from the simulator, which a submission may not; this uses only the head camera: any
                         saturated colour (not only the sim's red / yellow / blue) + depth for the 3D position.
@@ -33,6 +34,8 @@ from typing import Literal, Optional
 
 import numpy as np
 
+from google.adk.tools.tool_context import ToolContext
+
 from .robot import HZ, get_robot
 
 Bin = Literal["left", "center", "right"]
@@ -50,7 +53,22 @@ GRASP_ERR_RAD = float(os.environ.get("ROBOT_GRASP_ERR_RAD", "0.015"))
 # Triangular prisms: the plain pinch holds them in about 1 pick of 15 (same source) and can tip them over, so they
 # are only ever gripped on their flat faces. The angle between the fingers and the apex direction is tried in this
 # order, moving on after each miss on the same object.
-TRIANGLE_GRIPS_DEG = (105.0, 90.0, 75.0)
+TRIANGLE_GRIPS_DEG = tuple(float(v) for v in os.environ.get("ROBOT_TRI_GRIPS_DEG", "105,90,75").split(","))
+
+
+def _offset(name):
+    """[dx forward, dy left, dz up] in metres from an environment variable, added to where the hand grasps."""
+    try:
+        v = [float(x) for x in os.environ.get(name, "0,0,0").split(",")]
+        return np.array(v if len(v) == 3 else [0.0, 0.0, 0.0])
+    except ValueError:
+        return np.zeros(3)
+
+
+# Systematic corrections of the grasp point, found with the grasp bench (sim/grasp_bench.py), for every object
+# and for triangular prisms on top of that.
+GRASP_OFFSET_M = _offset("ROBOT_GRASP_OFFSET_M")
+TRIANGLE_OFFSET_M = _offset("ROBOT_TRI_OFFSET_M")
 
 
 # Two arms in one workspace: a planned move is refused if the moving arm would come this close to the other arm
@@ -102,6 +120,18 @@ async def _park(robot):
         await _run(robot, traj, "arms aside", start)
 
 
+async def _show(tool_context, name, robot, request):
+    """Save a camera view as an ADK artifact, so it appears in the `adk web` UI next to the tool call."""
+    if tool_context is None:
+        return
+    try:
+        from google.genai import types
+        from .agent import _render
+        await tool_context.save_artifact(name, types.Part.from_bytes(data=_render(robot, request), mime_type="image/jpeg"))
+    except Exception:  # noqa: BLE001  (no artifact service: nothing to show, nothing lost)
+        pass
+
+
 class ToolError(Exception):
     """A call the model got wrong; the message goes back to it."""
 
@@ -147,20 +177,24 @@ def _detect(robot):
     """Objects on the counter -> JSON for the model; remembered in robot.objects so tools can take their ids.
     An object keeps its id from one look to the next (same place), so ids stay valid across moves."""
     from agent.skills.perception import detect_camera, xyz_to_point
-    from .shape import classify_top, top_face_points
+    from .shape import classify_top, detect_by_depth, top_face_points
     ctx, obs = robot.ctx, robot.obs
     # The ONLY source of object positions: the head camera's colour and depth images in `obs`. Nothing here (or
     # anywhere in this package) asks the simulator where an object is.
     robot.fit_head_camera(obs.get("head_depth"))
-    found = detect_camera(ctx, obs, shapes=False)
-    for o in found:              # shape and rotation from the outline of the top face in the depth image
-        try:
-            shape, yaw, _, _ = classify_top(top_face_points(ctx, obs, o.xyz))
-        except Exception:  # noqa: BLE001
-            shape, yaw = None, None
-        o.extra["shape_seen"] = shape
-        o.shape = shape if shape in ("cube", "cylinder", "triangle") else None
-        o.yaw = yaw if o.shape in ("cube", "triangle") else None
+    by_depth = os.environ.get("ROBOT_DETECTOR", "depth") == "depth" and obs.get("head_depth") is not None
+    if by_depth:                 # geometry only: no colour thresholds anywhere (shape.detect_by_depth)
+        found = detect_by_depth(ctx, obs)
+    else:                        # the organisers' colour-blob detector, widened to every hue (older path)
+        found = detect_camera(ctx, obs, shapes=False)
+        for o in found:
+            try:
+                shape, yaw, _, _ = classify_top(top_face_points(ctx, obs, o.xyz))
+            except Exception:  # noqa: BLE001
+                shape, yaw = None, None
+            o.extra["shape_seen"] = shape
+            o.shape = shape if shape in ("cube", "cylinder", "triangle") else None
+            o.yaw = yaw if o.shape in ("cube", "triangle") else None
     found.sort(key=lambda o: -o.extra.get("n_px", 0))                    # one object matched by two masks is seen
     found = [o for i, o in enumerate(found)                               # twice: keep the larger blob
              if all(np.linalg.norm(o.xyz[:2] - p.xyz[:2]) > 0.03 for p in found[:i])]
@@ -188,14 +222,45 @@ def _detect(robot):
         if len(patch):
             sat = (patch.max(1) - patch.min(1)) / np.maximum(patch.max(1), 1.0)
             patch = patch[sat >= np.percentile(sat, 67)]
+        if o.extra.get("rgb"):
+            patch = np.array([o.extra["rgb"]], float)
         out.append({"id": o.id, "side": "left" if o.xyz[1] > 0 else "right",
                     "position_m": [round(float(o.xyz[0]), 3), round(float(o.xyz[1]), 3)],
                     "point": [int(round(y)), int(round(x))],
                     "rgb": [int(c) for c in np.median(patch, axis=0)] if len(patch) else None,
                     "shape_guess": "lying on its side" if o.extra.get("shape_seen") == "tipped" else o.shape,
                     "yaw_deg_guess": None if o.yaw is None else round(float(np.degrees(o.yaw)), 1)})
+        if o.id in robot.labels:                       # colour and shape from the Gemini Decisions API (see look)
+            lab = robot.labels[o.id]
+            out[-1]["gemini_label"] = {"colour": lab["colour"], "colour_confidence": lab["colour_confidence"],
+                                       "shape": lab["shape"], "shape_confidence": lab["shape_confidence"]}
     robot.trace.frame_dump(obs, robot.t, out)
     return out
+
+
+async def _look_result(robot):
+    """Detect, then let the Decisions API label every new object's colour and shape in one request."""
+    from . import decisions
+    objects = await asyncio.to_thread(_detect, robot)
+    new = [o["id"] for o in objects if o["id"] not in robot.labels]
+    if new and decisions.available():
+        try:
+            from .agent import _render
+            import cv2
+            marked = cv2.imdecode(np.frombuffer(_render(robot, {"camera": "head", "region": None, "mark_objects": True}),
+                                                np.uint8), cv2.IMREAD_COLOR)[..., ::-1]
+            seconds = await asyncio.to_thread(decisions.label_objects, marked, [o["id"] for o in objects],
+                                              robot.instruction, robot.labels)
+            robot.trace.write("decision_labels", t=round(robot.t, 2), seconds=seconds,
+                              labels={i: robot.labels.get(i) for i in new})
+            objects = await asyncio.to_thread(_detect, robot)
+        except Exception as e:  # noqa: BLE001  (labels are a help, never a requirement)
+            robot.log(f"[tool] Decisions API labels failed: {e!r}"[:300])
+            robot.trace.write("decision_labels", t=round(robot.t, 2), error=repr(e)[:300])
+    robot.view_requests.append({"camera": "head", "region": None, "mark_objects": True})   # ids drawn on the image
+    ctx = robot.ctx
+    bins = {b: [round(float(v), 3) for v in ctx.planner.bin_xy(b)] for b in ctx.bins()}
+    return _result("ok", objects_on_counter=objects, bins=bins, instruction=robot.instruction)
 
 
 def _expect(robot, object_id, xy):
@@ -228,6 +293,7 @@ def _target(robot, object_id, point, shape, yaw_deg):
         # The hand has to be turned to the object's flat faces (a must for triangular prisms): use the shape and
         # rotation measured from the depth image, unless the model says it is something else.
         shape, yaw = seen.shape, float(seen.yaw)
+    xyz = np.asarray(xyz, float) + GRASP_OFFSET_M + (TRIANGLE_OFFSET_M if shape == "triangle" and yaw is not None else 0.0)
     return WorldObject(object_id or "pointed", color, xyz, shape if yaw is not None else None, yaw, source=source)
 
 
@@ -471,7 +537,7 @@ async def _do_hand_over(robot, obj, bin_name):
 
 # ---------------------------------------------------------------------------------------------- sensing tools
 @_tool
-async def look() -> dict:
+async def look(tool_context: ToolContext = None) -> dict:
     """Detect the objects that are on the counter now, with the head camera.
 
     Call this at the start and whenever you are unsure what is where. It gives each object an id you can pass to
@@ -480,9 +546,9 @@ async def look() -> dict:
     colour that stands on the counter at object height; if it misses an object you can see, use point instead.
 
     Returns:
-      objects_on_counter: one entry per object: id (says nothing about colour or shape), rgb (the colour the
-        camera measured on the object, 0-255: compare objects with each other, e.g. orange has much less green
-        than yellow), side of the robot it lies on, position_m [x forward, y left] in metres from the robot's
+      objects_on_counter: one entry per object: id (says nothing about colour or shape), gemini_label (colour
+        and shape as judged by a fast Gemini vision model that compared all the objects in the image, each with
+        a confidence 0-1), rgb (the raw colour the camera measured, 0-255), side of the robot it lies on, position_m [x forward, y left] in metres from the robot's
         pelvis, point [y, x] in the head image (0..1000), and a rough guess of shape and rotation (often wrong:
         trust the image over it). Your next live view shows the head image with every id drawn on its object:
         decide each object's colour and shape from that image.
@@ -491,15 +557,14 @@ async def look() -> dict:
     robot = get_robot()
     await _ready(robot)
     await _park(robot)                      # arms out of the camera's view (an arm that holds something stays)
-    objects = await asyncio.to_thread(_detect, robot)
-    robot.view_requests.append({"camera": "head", "region": None, "mark_objects": True})   # ids drawn on the image
-    ctx = robot.ctx
-    bins = {b: [round(float(v), 3) for v in ctx.planner.bin_xy(b)] for b in ctx.bins()}
-    return _result("ok", objects_on_counter=objects, bins=bins, instruction=robot.instruction)
+    out = await _look_result(robot)
+    await _show(tool_context, "look.jpg", robot, {"camera": "head", "region": None, "mark_objects": True})
+    return out
 
 
 @_tool
-async def view_camera(camera: Camera = "head", region: Optional[list[float]] = None, mark_objects: bool = False) -> dict:
+async def view_camera(camera: Camera = "head", region: Optional[list[float]] = None, mark_objects: bool = False,
+                      tool_context: ToolContext = None) -> dict:
     """Look through one of the robot's cameras at full resolution. The picture arrives with your next live view.
 
     The live view you get on every turn is the head camera, scaled down (plus the wrist camera of a hand that
@@ -524,8 +589,69 @@ async def view_camera(camera: Camera = "head", region: Optional[list[float]] = N
             raise ToolError("region must be [ymin, xmin, ymax, xmax] with ymin < ymax and xmin < xmax, each 0..1000")
         region = [float(np.clip(v, 0, 1000)) for v in region]
     robot.view_requests.append({"camera": camera, "region": region, "mark_objects": bool(mark_objects)})
+    await _show(tool_context, f"view_{camera}.jpg", robot, robot.view_requests[-1])
     h, w = robot.obs[key].shape[:2]
     return _result("ok", camera=camera, image="attached to your next live view", full_resolution=[int(h), int(w)])
+
+
+@_tool
+async def ask_gemini(
+    question: str,
+    kind: Literal["yes_no", "choice", "score"] = "yes_no",
+    options: Optional[list[str]] = None,
+    camera: Camera = "head",
+    region: Optional[list[float]] = None,
+    mark_objects: bool = False,
+) -> dict:
+    """Ask a fast Gemini vision model one closed question about what a camera sees now (about a second).
+
+    Use it to settle something visual without spending a full turn of your own: "Is there a block inside the
+    left bin?", "Is the right hand holding a block?" (camera right_wrist), "Which of these colours is the block
+    labelled obj_3?" (mark_objects true), "How far is obj_2 from the bin rim?" (score).
+
+    Args:
+      question: The question. Refer to objects by their ids only if mark_objects is true.
+      kind: yes_no, choice (give options) or score (give options as levels, lowest first).
+      options: The answers to choose from, for choice and score. Add a catch-all such as "none of these".
+      camera: head, left_wrist or right_wrist (head_depth is not useful here).
+      region: [ymin, xmin, ymax, xmax], each 0..1000, to ask about part of the image only.
+      mark_objects: Draw the object ids from the latest look on the image (head camera only).
+
+    Returns:
+      yes_no: answer (true/false) and probability_yes. choice: answer and probabilities. score: score (the
+      expected level index) and probabilities. Always a confidence 0-1: below about 0.7, do not rely on it.
+    """
+    from . import decisions
+    from .agent import _render
+    import cv2
+    robot = get_robot()
+    await _ready(robot)
+    if not decisions.available():
+        raise ToolError("the Decisions API is not available (no key, or ROBOT_DECISIONS=0)")
+    if kind != "yes_no" and not options:
+        raise ToolError("give options for kind choice or score")
+    key = {"head": "head_rgb", "left_wrist": "left_wrist_rgb", "right_wrist": "right_wrist_rgb"}.get(camera)
+    if key is None or robot.obs.get(key) is None:
+        raise ToolError(f"the {camera} camera cannot be used here")
+    shown = cv2.imdecode(np.frombuffer(_render(robot, {"camera": camera, "region": region, "mark_objects": mark_objects}),
+                                       np.uint8), cv2.IMREAD_COLOR)[..., ::-1]
+    text = (f"This is the {camera.replace('_', ' ')} camera of a humanoid robot standing at a counter with small "
+            "coloured blocks and three orange bins (left, center, right from the robot's point of view)."
+            + (" Blocks on the counter have a white circle and an id (obj_1, ...) drawn on them." if mark_objects else ""))
+    try:
+        a = await asyncio.to_thread(decisions.ask, text, [decisions.image_block(shown)], question,
+                                    {"yes_no": "noul", "choice": "choice", "score": "score"}[kind], options)
+    except Exception as e:  # noqa: BLE001
+        raise ToolError(f"Decisions API call failed: {e!r}"[:300]) from None
+    out = {"confidence": round(float(a.get("confidence", 0)), 2), "latency_s": a.get("latency_s")}
+    if kind == "yes_no":
+        out.update(answer=bool(float(a.get("noul", 0.5)) >= 0.5), probability_yes=round(float(a.get("noul", 0.5)), 2))
+    elif kind == "choice":
+        out.update(answer=a.get("choice"), probabilities={k: round(float(v), 2) for k, v in (a.get("probabilities") or {}).items()})
+    else:
+        out.update(score=a.get("score"), probabilities=a.get("probabilities"))
+    robot.trace.write("decision_ask", t=round(robot.t, 2), question=question, kind=kind, options=options, answer=out)
+    return _result("ok", question=question, **out)
 
 
 @_tool
@@ -795,5 +921,5 @@ async def done(summary: str = "") -> dict:
     return out
 
 
-TOOLS = [look, view_camera, read_proprioception, pick_and_place, pick, place, place_on_counter, hand_over,
+TOOLS = [look, view_camera, ask_gemini, read_proprioception, pick_and_place, pick, place, place_on_counter, hand_over,
          go_home, wait, done]

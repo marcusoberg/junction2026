@@ -25,7 +25,7 @@ OMNI_KIT_ACCEPT_EULA=YES).
                                                    # ... on a varied scene: see sim/scene_variant.py
     modal run --detach sim/modal_sim.py --action sweep --tag s1 --sweep "nominal:sort_fixed:1000-1004, venue:sort_fixed:2000-2004"
                                                    # FAST: one app, every seed in its own sim at once, one table (run_sweep)
-    modal run sim/modal_sim.py --action grasp-bench --bench "--shapes triangle --yaws -60,-30,0,30,60" --tag gb1
+    modal run sim/modal_sim.py --action grasp-bench --bench "--shapes triangle --yaws=-60,-30,0,30,60" --tag gb1
                                                    # single-object grasp trials of our tools, scripted, no model calls
     modal run sim/modal_sim.py --action sh --script "aalto sim && aalto eval --policy oracle --task sort_language --trials 2"
 Demonstrations for training: the oracle sorts, we record every tick (sim/gen_demos.py), then convert to a LeRobot
@@ -170,7 +170,8 @@ def collect(tag):
 
 @app.function(image=image, gpu="L40S", cpu=12, memory=49152, timeout=4 * 3600,
               volumes={"/kitcache": kit_vol, "/out": out_vol, "/runs": runs_vol, "/data": data_vol})
-def session(script: str, tag: str, dr: str = "", task: str = "Aalto-Sort-G129-Dex3-Joint", return_eval: bool = False):
+def session(script: str, tag: str, dr: str = "", task: str = "Aalto-Sort-G129-Dex3-Joint", return_eval: bool = False,
+            return_path: str = ""):
     """Run a shell script inside the sim environment (the `aalto` CLI is on PATH), then save the outputs.
     return_eval: return {"rc", "trials"} with the evaluator's per-trial results instead of the exit code."""
     os.environ["TASK"] = task
@@ -193,6 +194,9 @@ def session(script: str, tag: str, dr: str = "", task: str = "Aalto-Sort-G129-De
         over.set()
         bash("aalto stop", timeout=90)
         collect(tag)
+    if return_path:
+        p = Path(return_path)
+        return {"rc": rc, "text": p.read_text() if p.exists() else ""}
     if return_eval:
         import json
         files = sorted(Path(f"{APP_DIR}/runs/eval").glob("*/eval.json"))
@@ -386,7 +390,7 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     def adk_script_for(eval_task, trials, seed):
         return (
                       # a container is reused for the next job of a sweep: no server, trace or results left over
-                      f"pkill -f 'robot_sorter[.]serve'; rm -rf /tmp/agent_trace /tmp/policy.log {APP_DIR}/runs/eval; sleep 1; "
+                      f"for p in $(pgrep -f robot_sorter); do grep -q '^python' /proc/$p/comm 2>/dev/null && kill $p; done; rm -rf /tmp/agent_trace /tmp/policy.log {APP_DIR}/runs/eval; sleep 1; "
                       f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
                       f"-m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
                       f"for i in $(seq 60); do grep -q ' ready\\|Traceback\\|Error' /tmp/policy.log && break; sleep 2; done; "
@@ -399,13 +403,33 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     if action == "sweep":
         return run_sweep(sweep, tag or f"sweep-{time.strftime('%m%d-%H%M')}", task, video, server_env, adk_script_for)
     # grasp-bench: single-object grasp trials of OUR tools, scripted agent, no model calls (sim/grasp_bench.py).
-    #   --bench "--shapes triangle --yaws -60,-30,0,30,60 --xs 0.30,0.45,0.60"
-    bench_script = (f"pkill -f 'robot_sorter[.]serve'; rm -rf /tmp/agent_trace /tmp/policy.log; python /opt/sim/scene_variant.py {variant}; "
+    #   --bench "--shapes triangle --yaws=-60,-30,0,30,60 --xs 0.30,0.45,0.60"
+    bench_script = (f"for p in $(pgrep -f robot_sorter); do grep -q '^python' /proc/$p/comm 2>/dev/null && kill $p; done; rm -rf /tmp/agent_trace /tmp/policy.log; python /opt/sim/scene_variant.py {variant}; "
                     f"(ROBOT_AGENT_MODEL=bench ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents "
                     f"/opt/adk/bin/python -m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
                     f"for i in $(seq 60); do grep -q ' ready\\|Traceback' /tmp/policy.log && break; sleep 2; done; "
                     f"python /opt/sim/grasp_bench.py {bench}; rc=$?; mkdir -p {APP_DIR}/runs && cp /tmp/grasp_bench.json {APP_DIR}/runs/ 2>/dev/null; "
                     f"grep 'Traceback' -A8 /tmp/policy.log | tail -20; exit $rc")
+    if action == "grasp-bench" and sweep:
+        # several settings of the agent side by side, one sim each, one app:
+        #   --sweep "base: ; lift6: ROBOT_TRI_OFFSET_M=0,0,0.006 ; nofit: ROBOT_HEADPOSE=0 ROBOT_DETECTOR=colour"
+        import json
+        configs = [(c.split(":", 1)[0].strip(), c.split(":", 1)[1].strip()) for c in sweep.split(";") if ":" in c]
+        tag = tag or f"gb-{time.strftime('%m%d-%H%M')}"
+        jobs = [(bench_script.replace("(ROBOT_AGENT_MODEL=bench", f"({env} ROBOT_AGENT_MODEL=bench"), f"{tag}/{name}", dr, task,
+                 False, "/tmp/grasp_bench.json") for name, env in configs]
+        print(f"grasp bench {tag}: {len(jobs)} settings, one sim each: {[n for n, _ in configs]}")
+        print(f"\n{'setting':12s}{'env':60s} sorted  first grasp held  grasps (held / made)")
+        for (name, env), res in zip(configs, session.starmap(jobs, return_exceptions=True)):
+            rows = json.loads(res["text"]) if isinstance(res, dict) and res.get("text") else []
+            made = sum(len(r["attempts"]) for r in rows)
+            held = sum(r["attempts"].count("completed") for r in rows)
+            first = sum(1 for r in rows if r["attempts"][:1] == ["completed"])
+            ok = sum(1 for r in rows if r["outcome"] == "correct")
+            print(f"{name:12s}{env[:58]:60s}{ok:3d}/{len(rows):<3d} {first:8d}/{len(rows):<3d}       {held:3d} / {made}"
+                  + ("" if isinstance(res, dict) else f"   {res!r}"[:80]))
+        print(f"\noutputs: mkdir -p sim_out && modal volume get aalto-sim-out {tag} sim_out")
+        return
     scripts = {
         "boot": "aalto sim && aalto check; aalto snap",
         "grasp-bench": bench_script,

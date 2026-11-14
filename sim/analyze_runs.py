@@ -62,7 +62,7 @@ def main(run_dirs):
             continue
         ev = json.loads(evals[-1].read_text())
         sc = Scene.load()
-        episodes = parse_log(run / "policy.log")
+        episodes = parse_log(run / "policy.log")[-len(ev["trials"]):]      # a reused container's log starts with older episodes
         print(f"\n================ {run.name}: {ev.get('task', '')} {ev.get('variant', '')}")
         for i, t in enumerate(ev["trials"]):
             mapping = {(tuple(k.split("/")) if "/" in k else k): v for k, v in (t.get("mapping") or {}).items()}

@@ -2,7 +2,8 @@
 scripted agent (adk_agents/robot_sorter/bench.py: look, pick_and_place, retry) behind the policy server, no model
 calls. Modelled on the organisers' aaltonomous/sim/grasp_test.py, which does the same for their oracle.
 
-    python /opt/sim/grasp_bench.py --shapes triangle --yaws -60,-30,0,30,60 --xs 0.30,0.45,0.60 [--ys 0.15]
+    python /opt/sim/grasp_bench.py --shapes triangle --yaws=-60,-30,0,30,60 --xs 0.30,0.45,0.60 [--ys 0.15]
+    (write --yaws=... with "=": a list starting with a minus sign is otherwise read as an option)
     (inside the sim container, sim running, policy server on :8000 with ROBOT_AGENT_MODEL=bench;
      sim/modal_sim.py --action grasp-bench --bench "..." sets all of that up)
 
@@ -35,7 +36,7 @@ def main(argv=None):
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--out", default="/tmp/grasp_bench.json")
     a = ap.parse_args(argv)
-    from aaltonomous.deploy.runner import Recorder, run_episode
+    from aaltonomous.deploy.runner import PolicyClient, Recorder, run_episode
     from aaltonomous.interface import env as env_mod
     from aaltonomous.interface.env import AaltoEnv
     from aaltonomous.sim.scene_client import SceneClient
@@ -48,7 +49,7 @@ def main(argv=None):
     L = env.scene.cfg["layout"]
     xs = [float(v) for v in a.xs.split(",")] if a.xs else list(np.linspace(*L["region_x"], 4))
     ys = [float(v) for v in a.ys.split(",")] if a.ys else [float(np.mean(L["region_y"]))]
-    client = ev.PolicyClient(a.policy, 120.0)
+    client = PolicyClient(a.policy, 120.0)
     tmp = Path(tempfile.mkdtemp(prefix="grasp_bench_"))
     cases = list(itertools.product(a.shapes.split(","), [float(y) for y in a.yaws.split(",")], xs, ys))
     colors = itertools.cycle(a.colors.split(","))
