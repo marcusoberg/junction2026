@@ -151,6 +151,7 @@ def _detect(robot):
     ctx, obs = robot.ctx, robot.obs
     # The ONLY source of object positions: the head camera's colour and depth images in `obs`. Nothing here (or
     # anywhere in this package) asks the simulator where an object is.
+    robot.fit_head_camera(obs.get("head_depth"))
     found = detect_camera(ctx, obs, shapes=False)
     for o in found:              # shape and rotation from the outline of the top face in the depth image
         try:

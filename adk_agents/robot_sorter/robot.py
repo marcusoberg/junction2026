@@ -57,7 +57,32 @@ class Robot:
                         "pink": [[[156, 70, 70], [169, 255, 255]]]})
                     self._ctx.camera = _any_colour_camera(self._ctx)
                 self.aside = self._aside_pose(self._ctx)
+                self.head_T0 = np.array(self._ctx.cal._T(self._ctx.camera.cam), float)     # the calibration file's pose
             return self._ctx
+
+    def fit_head_camera(self, depth):
+        """Once per episode, at the first look: re-fit the head camera's pose from the depth image itself (table
+        plane + bin walls, bot-icelli's headpose.py) and use it if the correction is plausible. The calibration
+        file's pose is a URDF default; the sim's randomisation moves the camera by ~1 cm / 1 deg and the real
+        camera is reported to point about 10 deg further down. Without this the bins' walls leak out of their
+        masked footprint as false objects and positions are off by 1-2 cm."""
+        if self.pose_fit is not None or depth is None or os.environ.get("ROBOT_HEADPOSE", "1") != "1":
+            return
+        from .headpose import fit_head_pose, plausible
+        ctx = self.ctx
+        cam = ctx.cal.cams[ctx.camera.cam]
+        try:
+            cam.T_pelvis_optical = self.head_T0.copy()
+            fit = fit_head_pose(depth, ctx.cal, ctx.scene)
+            used = bool(plausible(fit))
+            if used:
+                cam.T_pelvis_optical = np.asarray(fit.T, float)
+            self.pose_fit = {"used": used, "summary": fit.summary()}
+        except Exception as e:  # noqa: BLE001
+            cam.T_pelvis_optical = self.head_T0.copy()
+            self.pose_fit = {"used": False, "summary": f"fit failed: {e!r}"}
+        self.log(f"[robot t={self.t:6.2f}] head camera pose fit: {'used' if self.pose_fit['used'] else 'NOT used'}; {self.pose_fit['summary']}")
+        self.trace.write("head_pose_fit", t=round(self.t, 2), **self.pose_fit)
 
     @staticmethod
     def _aside_pose(ctx):
@@ -98,6 +123,7 @@ class Robot:
             self.tries = {}                    # object id -> grasps that missed (the next one uses another grip)
             self.placed = {}                   # bin -> objects we dropped in it (spreads the drop points)
             self.view_requests = []            # camera views the agent asked for; shown with the next model call
+            self.pose_fit = None               # head camera pose fit of this episode (see fit_head_camera)
             self.finished = False              # the agent called done
             self.moves = []                    # what was executed, for logs
 

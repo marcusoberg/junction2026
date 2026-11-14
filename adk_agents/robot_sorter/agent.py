@@ -67,8 +67,15 @@ Rules:
 - "failed" means no safe plan was found and nothing moved; the reason says why. Do something different.
 - Sort the easy objects first and come back to a difficult one at the end.
 - The left bin is reachable only with the left arm and the right bin only with the right arm.
+- Colours never look the way they are named. The camera and the light shift and wash them out: what the
+  instruction calls yellow can look pale green-yellow or cream, purple can look blue or lilac, orange can look
+  tan, peach or light brown, red can look pink. Every object on the counter is one of the task's colours, so do
+  not look for an exact match: compare the objects WITH EACH OTHER (the image and the rgb values) and give each
+  one the named colour it is nearest to. Objects of the same colour look alike; the most blue-ish group is the
+  purple (or blue) one, the most red-ish group the orange (or red) one, the most green-yellow one the yellow.
 - Scoring: an object in the right bin scores; one in a wrong bin or knocked off the counter costs a point; one
-  left on the counter costs nothing. If you are not sure which bin an object belongs in, leave it.
+  left on the counter scores nothing. So sort every object you can assign. Leave an object only when it could
+  equally well be two of the named colours (or shapes) and the bins differ.
 - The instruction may name colours, shapes or both, and the colours may be any (not only red, yellow, blue).
   Read it each episode. If it is about something the cameras must settle (a shape, which object is which),
   zoom in with view_camera before you decide.

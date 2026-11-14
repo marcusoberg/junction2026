@@ -23,6 +23,8 @@ OMNI_KIT_ACCEPT_EULA=YES).
     modal run sim/modal_sim.py --action eval-adk --trials 2 --seed 1000        # the ADK agent in adk_agents/ (key from its .env)
     modal run sim/modal_sim.py --action eval-adk --trials 5 --seed 2000 --variant "--colors real --dr wide" --dr wide
                                                    # ... on a varied scene: see sim/scene_variant.py
+    modal run --detach sim/modal_sim.py --action sweep --tag s1 --sweep "nominal:sort_fixed:1000-1004, venue:sort_fixed:2000-2004"
+                                                   # FAST: one app, every seed in its own sim at once, one table (run_sweep)
     modal run sim/modal_sim.py --action sh --script "aalto sim && aalto eval --policy oracle --task sort_language --trials 2"
 Demonstrations for training: the oracle sorts, we record every tick (sim/gen_demos.py), then convert to a LeRobot
 dataset in the format of the real-robot drop (sim/to_dataset.py). --shards sims run in parallel, one L40S each;
@@ -94,6 +96,10 @@ image = (
     # next to the sim the way a submission container would (the sim's own env is left exactly as they built it).
     .run_commands("/usr/local/bin/python -m venv /opt/policy && /opt/policy/bin/pip install --no-cache-dir "
                   "'lerobot[pi]==0.7.0' msgpack 'websockets>=12' pin pyyaml")
+    # The ADK agent's environment, with the versions it was tested with. No pyzmq: without it the policy process
+    # cannot reach the sim's scene service (ground-truth object poses), whatever the code does.
+    .run_commands("/usr/local/bin/python -m venv /opt/adk && /opt/adk/bin/pip install --no-cache-dir google-adk==2.14.1 "
+                  "numpy==2.2.6 scipy==1.15.2 opencv-python-headless==4.10.0.84 pyyaml msgpack 'websockets>=12' pin==3.3.1")
     .add_local_file(HERE.parent / "submission/server.py", "/opt/submission/server.py")
     .add_local_file(HERE / "gen_demos.py", "/opt/sim/gen_demos.py")
     .add_local_file(HERE / "scene_variant.py", "/opt/sim/scene_variant.py")
@@ -161,8 +167,9 @@ def collect(tag):
 
 @app.function(image=image, gpu="L40S", cpu=12, memory=49152, timeout=4 * 3600,
               volumes={"/kitcache": kit_vol, "/out": out_vol, "/runs": runs_vol, "/data": data_vol})
-def session(script: str, tag: str, dr: str = "", task: str = "Aalto-Sort-G129-Dex3-Joint"):
-    """Run a shell script inside the sim environment (the `aalto` CLI is on PATH), then save the outputs."""
+def session(script: str, tag: str, dr: str = "", task: str = "Aalto-Sort-G129-Dex3-Joint", return_eval: bool = False):
+    """Run a shell script inside the sim environment (the `aalto` CLI is on PATH), then save the outputs.
+    return_eval: return {"rc", "trials"} with the evaluator's per-trial results instead of the exit code."""
     os.environ["TASK"] = task
     if dr and dr != "none":
         os.environ["AALTO_DR"] = dr          # e.g. train (aaltonomous/sim/dr/train.yaml)
@@ -183,6 +190,10 @@ def session(script: str, tag: str, dr: str = "", task: str = "Aalto-Sort-G129-De
         over.set()
         bash("aalto stop", timeout=90)
         collect(tag)
+    if return_eval:
+        import json
+        files = sorted(Path(f"{APP_DIR}/runs/eval").glob("*/eval.json"))
+        return {"rc": rc, "trials": json.loads(files[-1].read_text()).get("trials", []) if files else []}
     return rc
 
 
@@ -262,12 +273,66 @@ def datagen(name: str, shards: int = 1, episodes: int = 2, seed: int = 100000, e
           f"next:    modal run training/modal_pi05.py --action prepare --src {name} --name {name}")
 
 
+# Named scenes for --action sweep: (arguments for sim/scene_variant.py, the sim's randomisation config).
+SCENES = {
+    "nominal": ("", ""),
+    "nominal-dr": ("", "train"),                                            # the organisers' training randomisation
+    "venue": ("--colors venue", "train"),                                   # the real colours as the robot's camera sees them
+    "venue-wide": ("--colors venue --placement wide", "train"),
+    "venue-shape": ("--colors venue --placement wide --instructions shape", "train"),
+    "pastel": ("--colors pastel --dr wide --placement wide", "wide"),
+    "real-wide": ("--colors real --dr wide --placement wide", "wide"),      # orange / yellow can be ambiguous here
+}
+
+
+def run_sweep(spec, tag, task, video, server_env, adk_script_for):
+    """One app, every (scene, task, seed) in its own sim container at the same time; one table at the end.
+
+        modal run --detach sim/modal_sim.py --action sweep --tag s1 \\
+            --sweep "nominal:sort_fixed:1000-1004, venue:sort_fixed:2000-2004, venue-shape:sort_language:4000-4004"
+
+    Wall time is about one sim start plus the longest episode (8-10 min) however many seeds there are, up to the
+    workspace's GPU limit. Outputs: aalto-sim-out volume, <tag>/<scene>-<task>-<seed>/ (traces, videos, logs)."""
+    env_file = HERE.parent / "adk_agents" / "robot_sorter" / ".env"
+    pairs = [line.split("=", 1) for line in env_file.read_text().splitlines()
+             if "=" in line and not line.lstrip().startswith("#")]
+    fn = session.with_options(secrets=[modal.Secret.from_dict({k.strip(): v.strip().strip("'\"") for k, v in pairs})])
+    jobs = []
+    for part in filter(None, (p.strip() for p in spec.split(","))):
+        scene, eval_task, seeds = part.split(":")
+        lo, _, hi = seeds.partition("-")
+        variant, dr = SCENES[scene]
+        for seed in range(int(lo), int(hi or lo) + 1):
+            script = adk_script_for(eval_task, 1, seed)
+            if variant:
+                script = f"python /opt/sim/scene_variant.py {variant} && " + script
+            jobs.append(((scene, eval_task, seed), (script, f"{tag}/{scene}-{eval_task}-{seed}", dr, task, True)))
+    print(f"sweep {tag}: {len(jobs)} episodes, each in its own sim")
+    rows, t0 = [], time.monotonic()
+    for (scene, eval_task, seed), res in zip([j[0] for j in jobs], fn.starmap([j[1] for j in jobs], return_exceptions=True)):
+        trial = (res.get("trials") or [{}])[0] if isinstance(res, dict) else {}
+        out = [o["outcome"] for o in trial.get("outcomes", [])]
+        rows.append((scene, eval_task, seed, out, trial.get("score"), trial.get("gate_ok"), "" if isinstance(res, dict) else repr(res)[:60]))
+    print(f"\nsweep {tag} finished in {(time.monotonic() - t0) / 60:.1f} min\n")
+    print(f"{'scene':14s}{'task':15s}{'seed':>6s}  correct  wrong  left  score  gate")
+    totals = {}
+    for scene, eval_task, seed, out, score, gate, err in rows:
+        c, w, n = out.count("correct"), out.count("wrong") + out.count("off"), len(out)
+        print(f"{scene:14s}{eval_task:15s}{seed:6d}  {c:3d}/{n:<3d}  {w:5d}  {n - c - w:4d}  {str(score):>5s}  {'ok' if gate else 'FAIL' if gate is False else '?'}  {err}")
+        t = totals.setdefault((scene, eval_task), [0, 0, 0])
+        t[0] += c; t[1] += w; t[2] += n
+    print()
+    for (scene, eval_task), (c, w, n) in totals.items():
+        print(f"TOTAL {scene:14s}{eval_task:15s} {c}/{n} correct ({100 * c / max(n, 1):.0f} %), {w} wrong bin")
+    print(f"\noutputs: mkdir -p sim_out && modal volume get aalto-sim-out {tag} sim_out")
+
+
 @app.local_entrypoint()
 def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", tag: str = "",
          task: str = "Aalto-Sort-G129-Dex3-Joint", ckpt: str = "", eval_task: str = "sort_fixed", video: bool = True,
          name: str = "", shards: int = 1, episodes: int = 2, seed: int = 100000, schema: str = "drop1",
          max_idle: int = 15, mode: str = "segments", background: bool = False, server_env: str = "",
-         gen_args: str = "", variant: str = ""):
+         gen_args: str = "", variant: str = "", sweep: str = ""):
     # --background (with `modal run --detach`): start the job and return, so it does not depend on this computer
     # staying awake and online. Results land on the volumes as usual.
     if action in ("datagen", "convert"):
@@ -308,7 +373,7 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
                     + "grep 'agent t=\\|episode end\\|Traceback\\|Error' /tmp/policy.log | tail -60; exit $rc")
     # eval-adk: the Google ADK agent (adk_agents/robot_sorter/serve.py) as the policy server. The API key and the
     # model are taken from adk_agents/robot_sorter/.env on this computer when the run is started (the file itself is
-    # not uploaded). ADK gets an environment of its own, made at start (about a minute), with the
+    # not uploaded). ADK has an environment of its own in the image (/opt/adk), with the
     # versions the agent was tested with; nothing in the image or the sim's environment changes.
     #   --server-env "ROBOT_AGENT_MODEL=gemini-4-argon"   another model (default gemini-3.8-flash)
     # pyzmq is deliberately NOT installed there: without it the policy process cannot talk to the sim's scene
@@ -316,16 +381,19 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     #   --variant "--colors real --dr wide --placement wide --instructions shape" --dr wide
     #       edit the container's scene before the sim starts (sim/scene_variant.py): other object colours, shades,
     #       placements, shape-based instructions. With "--dr wide" in the variant also pass --dr wide.
-    adk_script = ("/usr/local/bin/python -m venv /opt/adk && /opt/adk/bin/pip install -q google-adk==2.14.1 numpy==2.2.6 "
-                  "scipy==1.15.2 opencv-python-headless==4.10.0.84 pyyaml msgpack 'websockets>=12' pin==3.3.1 "
-                  "2>&1 | tail -2; "
-                  f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
-                  f"-m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
-                  f"for i in $(seq 60); do grep -q ' ready\\|Traceback\\|Error' /tmp/policy.log && break; sleep 2; done; "
-                  f"grep ' ready\\|Traceback\\|Error' /tmp/policy.log | tail -5; "
-                  + (EVAL_WITH_VIDEO if video else "aalto eval")
-                  + f" --policy ws://localhost:8000 --team adk --task {eval_task} --trials {trials} --seed {seed}; rc=$?; "
-                  + "grep 'agent\\|robot t=\\|Traceback\\|Error' /tmp/policy.log | cut -c1-400 | tail -80; exit $rc")
+    def adk_script_for(eval_task, trials, seed):
+        return (
+                      f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
+                      f"-m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
+                      f"for i in $(seq 60); do grep -q ' ready\\|Traceback\\|Error' /tmp/policy.log && break; sleep 2; done; "
+                      f"grep ' ready\\|Traceback\\|Error' /tmp/policy.log | tail -5; "
+                      + (EVAL_WITH_VIDEO if video else "aalto eval")
+                      + f" --policy ws://localhost:8000 --team adk --task {eval_task} --trials {trials} --seed {seed}; rc=$?; "
+                      + "grep 'agent\\|robot t=\\|Traceback\\|Error' /tmp/policy.log | cut -c1-400 | tail -80; exit $rc")
+
+    adk_script = adk_script_for(eval_task, trials, seed)
+    if action == "sweep":
+        return run_sweep(sweep, tag or f"sweep-{time.strftime('%m%d-%H%M')}", task, video, server_env, adk_script_for)
     scripts = {
         "boot": "aalto sim && aalto check; aalto snap",
         "eval-skills": skills,

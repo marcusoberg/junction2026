@@ -89,6 +89,19 @@ modal run --detach sim/modal_sim.py --action eval-adk --eval-task sort_language 
     --variant "--colors real --dr wide --placement wide --instructions shape" --tag var-real-shape
 ```
 
+## Iterating fast (do these before spending sim time)
+
+| Loop | Time | What it tests | Command |
+|---|---|---|---|
+| Perception replay | seconds, local | `look` on saved sim frames against the true layout: objects found, position error, shape, rotation, measured colour | `PYTHONPATH=aaltonomous-humanoid:adk_agents:. .venv/bin/python sim/replay_perception.py sim_out/t1-* -v` |
+| Decision replay | ~1 min, local, real model | which bin the agent chooses for each object on saved frames (motions faked): prompt, colour and shape reasoning | `PYTHONPATH=aaltonomous-humanoid:adk_agents:. .venv/bin/python sim/replay_decisions.py sim_out/t2-venue-fixed sim_out/t1-nominal` |
+| Sweep | ~10 min, one Modal app | the whole agent in the Isaac sim, every (scene, task, seed) in its own sim at once, one table | `modal run --detach sim/modal_sim.py --action sweep --tag s1 --sweep "nominal:sort_fixed:1000-1004, venue:sort_fixed:2000-2004"` |
+| Failure analysis | seconds, local | per object: shape, bin wanted, outcome, every attempt | `PYTHONPATH=aaltonomous-humanoid .venv/bin/python sim/analyze_runs.py sim_out/<run>` |
+
+Every sim run saves `agent_trace/` (full tool history as JSON lines, plus the head colour and depth image behind
+every detection); the two replays feed on those frames, so each sim run makes the offline loops better.
+Not built yet: a single-grasp bench in the sim (one object, one pick, no model) for grasp theories.
+
 ## Status
 
 Scores from the Isaac sim are the only ones that count; see `sim_out/adk-*/runs/eval/*/eval.json` once a run has been

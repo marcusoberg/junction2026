@@ -1,0 +1,1 @@
+{"t": 14.64, "detections": [{"id": "obj_1", "side": "left", "position_m": [0.294, 0.162], "point": [790, 214], "rgb": [231, 223, 219], "shape_guess": "cylinder", "yaw_deg_guess": null}, {"id": "obj_3", "side": "right", "position_m": [0.296, -0.09], "point": [788, 727], "rgb": [234, 235, 220], "shape_guess": "cube", "yaw_deg_guess": -43.8}]}
