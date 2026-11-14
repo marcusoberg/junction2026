@@ -1,0 +1,14 @@
+# BuildKit uses this for -f submission/adk.Dockerfile: send only what the image copies.
+*
+!aaltonomous-humanoid/aaltonomous
+!aaltonomous-humanoid/third_party/xr_teleoperate/assets/g1/g1_body29_hand14.urdf
+!agent
+!adk_agents/robot_sorter
+aaltonomous-humanoid/aaltonomous/data
+aaltonomous-humanoid/aaltonomous/docs
+aaltonomous-humanoid/aaltonomous/cloud
+agent/tests
+**/__pycache__
+**/*.pyc
+**/.DS_Store
+**/.adk
