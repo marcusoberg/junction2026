@@ -179,3 +179,14 @@ def fit_head_pose(depth, cal, scene, T0=None, rng=None, max_range_mm=1600):
     T2[:3, 3] = R2 @ T1[:3, 3] + [dx, dy, 0.0]
     fit.T, fit.dxy, fit.dyaw_deg = T2, (float(dx), float(dy)), float(np.degrees(yaw))
     return fit
+
+
+def camera_move_ok(fit, T0, max_tilt_deg=15.0, max_move_m=0.06, max_yaw_deg=6.0):
+    """Accept a fit by how far the CAMERA ends up from where the calibration put it (from our teammates' v1.4).
+    plausible() limits the fit's raw shift, but that shift is applied to the whole frame after the tilt: a correct
+    10 deg tilt shows up as about 8 cm of shift while the camera itself moves about 2 cm, so plausible() threw the
+    right fit away in a venue-like scene (and would on the real robot, whose camera points about 10 deg lower)."""
+    if not fit.ok or fit.tilt_deg > max_tilt_deg or abs(fit.dyaw_deg) > max_yaw_deg:
+        return False
+    move = np.asarray(fit.T, float)[:3, 3] - np.asarray(T0, float)[:3, 3]
+    return float(np.linalg.norm(move)) <= max_move_m

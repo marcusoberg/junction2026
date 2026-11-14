@@ -68,13 +68,13 @@ class Robot:
         masked footprint as false objects and positions are off by 1-2 cm."""
         if self.pose_fit is not None or depth is None or os.environ.get("ROBOT_HEADPOSE", "1") != "1":
             return
-        from .headpose import fit_head_pose, plausible
+        from .headpose import camera_move_ok, fit_head_pose
         ctx = self.ctx
         cam = ctx.cal.cams[ctx.camera.cam]
         try:
             cam.T_pelvis_optical = self.head_T0.copy()
             fit = fit_head_pose(depth, ctx.cal, ctx.scene)
-            used = bool(plausible(fit))
+            used = bool(camera_move_ok(fit, self.head_T0))
             if used:
                 cam.T_pelvis_optical = np.asarray(fit.T, float)
             self.pose_fit = {"used": used, "summary": fit.summary()}
@@ -120,7 +120,9 @@ class Robot:
             self.held_id = None                # id of the object in that hand, if it came from a look
             self.objects = {}                  # id -> WorldObject, from the last look
             self.id_count = {}                 # ids handed out, so an id is never reused in an episode
-            self.tries = {}                    # object id -> grasps that missed (the next one uses another grip)
+            self.failed = {}                   # object id -> grasp options that missed on it (never repeated)
+            self.recent = []                   # the last tool results' statuses (drives the thinking level)
+            self.difficulty = None             # how hard the scene looks, 0..2, from the Decisions API at look
             self.labels = {}                   # object id -> colour / shape label from the Gemini Decisions API
             self.seen, self.seen_rgb = [], None  # the last look: objects as reported to the model, and its image
             self.waiting = None                # an arm waiting above a bin for its next object ("left" | "right")

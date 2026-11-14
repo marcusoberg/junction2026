@@ -104,7 +104,15 @@ def label_objects(marked_rgb, ids, instruction, cache):
                                     "criteria": colours}
         questions[f"shape_{i}"] = {"type": "choice", "instructions": f"What shape is the block labelled {i}?",
                                    "criteria": SHAPES}
+    questions["difficulty"] = {
+        "type": "score", "instructions": "How hard is it to decide which bin each block on the counter belongs in?",
+        "criteria": ["Easy: every block's colour and shape is obvious and the instruction is a plain colour-to-bin list.",
+                     "Moderate: some colours or shapes are close to each other, or the instruction needs some care.",
+                     "Hard: colours or shapes are unclear, or the instruction has exceptions (e.g. 'the rest', "
+                     "'whatever their shape', colour and shape together)."]}
     answers, seconds = create(text, [image_block(marked_rgb)], questions)
+    if answers.get("difficulty") is not None:
+        cache["_difficulty"] = float(answers["difficulty"].get("score", 0.0))
     for i in todo:
         c, s = answers.get(f"colour_{i}"), answers.get(f"shape_{i}")
         if c and s:

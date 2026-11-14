@@ -8,8 +8,8 @@ Before every model call, `attach_live_view` adds the CURRENT head camera image, 
 the model asked for with view_camera. These are not stored in the session, so the history stays small (fast
 calls) and the model always decides on what the cameras show now.
 
-Environment (robot_sorter/.env): ROBOT_AGENT_MODEL (default gemini-3.8-flash), ROBOT_AGENT_THINKING
-(minimal | low | medium | high | default; default low: the robot stands still while the model thinks).
+Environment (robot_sorter/.env): ROBOT_AGENT_MODEL (default gemini-3.8-flash). How much the model thinks is chosen
+per request by thinking_level(): least on routine turns, more when a move went wrong or the scene is unclear.
 """
 from __future__ import annotations
 
@@ -53,19 +53,20 @@ How to work, one step at a time (look, act, check, repeat):
 2. Pick the object that is nearest its bin and call pick_and_place for it. Every result lists the objects that
    are on the counter after the move, so you can go straight on to the next object.
 3. Read the status of each move. "completed": the finger sensors felt the object and it was carried to the bin;
-   go on. "missed": the hand closed on nothing and the object is still on the counter. Do not repeat the same
-   grasp: change something, in this order: if object_moved_m shows the attempt pushed it, shift the grasp the
-   same way with xy_offset_m (about 0.015 m); then the other arm; then a different finger_direction_deg (-40 or
-   +40; not for triangular prisms). A triangular prism is always gripped on its flat faces and the tool tries a
-   different grip angle after each miss, so for a prism simply call again. Keep trying while time is left and
-   there is nothing better to do, but stop if the misses push the object towards the edge of the counter.
+   go on. "missed": the hand closed on nothing and the object is still on the counter. The tools remember every
+   grip that missed on an object and never repeat it: calling pick_and_place again for the same object uses the
+   next grip or the other arm by itself (other_grasps_to_try lists what is left). So simply call it again, or sort
+   the other objects first and come back. When no grip is left, change an argument (xy_offset_m the way
+   object_moved_m shows it was pushed, max_tilt_deg, grasp_height_frac, finger_direction_deg) or hand it over.
+   A block lying on its side (lying_ridge_deg) is gripped across its two ends automatically.
 4. "failed: no safe plan" means nothing moved; the reason names what was in the way. Find a plan that works
    before moving: call choose_arm to see what each arm can do, and check_plan with variations (several calls in
    one turn are fine): the other arm, max_tilt_deg 50, a pregrasp_offset_m away from the bin rim or the body that
    was in the way, a different finger_direction_deg. Run the one that is ok with pick_and_place and the same
    arguments. If only the grasp is possible (the bin is out of that arm's reach), call hand_over and then
    pick_and_place. If nothing works, leave the object and go on.
-5. When nothing useful is left, call done.
+5. Call done only when every object is sorted, or every remaining object has no grasp left to try, or less than
+   about 12 s remain. Do not stop while time is left and something can still be tried.
 
 Rules:
 - "failed" means no safe plan was found and nothing moved; the reason says why. Do something different.
@@ -171,14 +172,42 @@ async def attach_live_view(callback_context: CallbackContext, llm_request: LlmRe
     if not await asyncio.to_thread(robot.ensure_running, session):
         return None                                    # no robot yet: let the model answer without images
     llm_request.contents.append(types.Content(role="user", parts=await asyncio.to_thread(live_view, robot)))
+    if isinstance(callback_context_agent_model(callback_context), str):       # a real Gemini model, not a stand-in
+        level, why = thinking_level(robot)
+        llm_request.config.thinking_config = types.ThinkingConfig(thinking_level=level)
+        robot.trace.write("thinking", t=round(robot.t, 2), level=level, why=why)
     return None
 
 
-def _generation_config():
-    level = os.environ.get("ROBOT_AGENT_THINKING", "low").strip().lower()
-    if level in ("", "default"):
-        return None
-    return types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_level=level))
+def callback_context_agent_model(callback_context):
+    try:
+        return callback_context._invocation_context.agent.model
+    except Exception:  # noqa: BLE001
+        return MODEL
+
+
+def thinking_level(robot):
+    """How much the model should think on THIS request. The robot stands still while it thinks, so routine turns
+    get the least and only turns that need it get more. Signals, all already at hand (no extra call):
+      - the Decisions API's view of the scene from the last look: its difficulty score (0 easy .. 2 hard) and how
+        confident it was about each object's colour and shape;
+      - whether the last moves went wrong (missed, failed, aborted);
+      - whether the instruction has exceptions ("the rest", "other", "whatever", "except")."""
+    # gemini-4-hydrogen supports low, medium and high (it rejects "minimal": checked live, 14 Nov).
+    if not robot.seen:
+        return "low", "nothing looked at yet: the only sensible call is look"
+    conf = [min(l.get("colour_confidence", 1.0), l.get("shape_confidence", 1.0))
+            for i, l in robot.labels.items() if i in robot.objects and isinstance(l, dict)]
+    trouble = sum(1 for st in robot.recent[-2:] if st in ("missed", "failed", "aborted"))
+    tricky = any(w in (robot.instruction or "").lower() for w in (" rest", "other", "whatever", "except", "everything else"))
+    unsure = (robot.difficulty or 0.0) >= 1.3 or (conf and min(conf) < 0.7)
+    # Measured offline on saved frames (sim/replay_decisions.py --thinking): "medium" on every turn decided no
+    # better than "low" (hard scene 13 right / 7 wrong against 14 / 6; easy scene 20 / 0 both) at about the same
+    # time per turn. So "low" is the rule and "medium" is kept for the two cases where a second look is cheap
+    # insurance: two moves in a row went wrong, or the scene looks unsure AND the instruction has exceptions.
+    if trouble >= 2 or (unsure and tricky):
+        return "medium", "two moves in a row went wrong, or an unsure scene with an instruction that has exceptions"
+    return "low", "routine"
 
 
 def build_agent(model=None) -> Agent:
@@ -189,7 +218,6 @@ def build_agent(model=None) -> Agent:
         description="Sorts coloured objects into bins with a Unitree G1 humanoid, by calling oracle-based motion skills.",
         instruction=INSTRUCTION,
         tools=list(TOOLS),
-        generate_content_config=_generation_config() if model is None else None,
         before_model_callback=[attach_live_view] if model is not None else [require_api_key, attach_live_view],
     )
 

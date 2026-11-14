@@ -22,7 +22,8 @@ import numpy as np
 
 
 def episode(job):
-    run, i, verbose = job
+    run, i, verbose, level = job
+    import time as _time
     import cv2
     from google.adk.agents import Agent
     from google.adk.runners import InMemoryRunner
@@ -31,6 +32,9 @@ def episode(job):
     from robot_sorter import agent as A, tools as T
     from robot_sorter.robot import get_robot
 
+    levels = []
+    rule = A.thinking_level
+    A.thinking_level = lambda r: (levels.append(level or rule(r)[0]) or (levels[-1], "replay"))
     run = Path(run)
     ev = json.loads(sorted(run.glob("runs/eval/*/eval.json"))[-1].read_text())
     t = ev["trials"][i]
@@ -99,7 +103,7 @@ def episode(job):
         return tool
 
     agent = Agent(name="robot_sorter", model=A.MODEL, instruction=A.INSTRUCTION, tools=[stand_in(x) for x in T.TOOLS],
-                  generate_content_config=A._generation_config(), before_model_callback=[A.attach_live_view])
+                  before_model_callback=[A.attach_live_view])
     runner = InMemoryRunner(agent=agent, app_name="robot_sorter")
 
     async def go():
@@ -115,6 +119,7 @@ def episode(job):
 
     T._detect(robot)
     first = {k: (o.xyz[:2].copy(), o.extra.get("shape_seen")) for k, o in robot.objects.items()}
+    t0 = _time.monotonic()
     try:
         asyncio.run(go())
         error = ""
@@ -129,20 +134,22 @@ def episode(job):
         chose = decisions.get(oid) if oid is not None and np.linalg.norm(first[oid][0] - xy) < 0.04 else None
         rows.append({"color": c["color"], "shape": c["shape"], "want": want, "chose": chose,
                      "verdict": "left" if chose is None else "right" if chose == want else "WRONG"})
-    return {"run": run.name, "seed": t["seed"], "instruction": t["instruction"], "rows": rows, "said": said, "error": error}
+    return {"run": run.name, "seed": t["seed"], "instruction": t["instruction"], "rows": rows, "said": said, "error": error,
+            "levels": levels, "seconds": _time.monotonic() - t0}
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("runs", nargs="+")
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--thinking", default=None, help="force one thinking level (low | medium | high) instead of the rule")
     ap.add_argument("-v", "--verbose", action="store_true")
     a = ap.parse_args()
     jobs = []
     for run in a.runs:
         evals = sorted(Path(run).glob("runs/eval/*/eval.json"))
         if evals and (Path(run) / "agent_trace" / "frames").is_dir():
-            jobs += [(run, i, a.verbose) for i in range(len(json.loads(evals[-1].read_text())["trials"]))]
+            jobs += [(run, i, a.verbose, a.thinking) for i in range(len(json.loads(evals[-1].read_text())["trials"]))]
     with ProcessPoolExecutor(a.workers) as pool:
         results = [r for r in pool.map(episode, jobs) if r]
     totals = {}
@@ -159,9 +166,13 @@ def main():
                 print(f"    agent's summary: {r['said'][-1][:260]}")
             if r["error"]:
                 print(f"    ERROR: {r['error']}")
-    print("\nrun                      right  WRONG  left   (decisions only: every grasp is assumed to succeed)")
+    print("\nrun                      right  WRONG  left   model turns  thinking levels used        s per turn")
     for name, tot in totals.items():
-        print(f"{name:24s}{tot['right']:6d}{tot['WRONG']:7d}{tot['left']:6d}")
+        mine = [r for r in results if r["run"] == name]
+        lv = [x for r in mine for x in r["levels"]]
+        used = ", ".join(f"{k} {lv.count(k)}" for k in ("low", "medium", "high") if lv.count(k))
+        per = sum(r["seconds"] for r in mine) / max(len(lv), 1)
+        print(f"{name:24s}{tot['right']:6d}{tot['WRONG']:7d}{tot['left']:6d}{len(lv):12d}   {used:26s}{per:6.1f}")
 
 
 if __name__ == "__main__":

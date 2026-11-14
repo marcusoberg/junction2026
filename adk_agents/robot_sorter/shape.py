@@ -52,6 +52,17 @@ def classify_top(xy):
     return shape, yaw, centre, f
 
 
+def ridge_yaw(xy):
+    """Top-strip points (n, 2) of a block lying on its side -> (direction of its ridge in rad, mod pi; how many
+    times longer than wide the strip is). The idea and the 2.0 ratio limit are our teammates' (bot-icelli v1.5:
+    47 of 48 lying prisms found offline, 0.8 deg median error)."""
+    p = np.asarray(xy, float)
+    c = p - p.mean(0)
+    w, v = np.linalg.eigh(c.T @ c)
+    ax = v[:, -1]
+    return float((np.arctan2(ax[1], ax[0]) + np.pi / 2) % np.pi - np.pi / 2), float(np.sqrt(w[-1] / max(w[0], 1e-12)))
+
+
 def top_face_points(ctx, obs, xyz, radius_m=0.045, band_m=0.006, window_px=60):
     """(n, 2) pelvis-frame xy of the depth pixels on the top face of the object whose top centre is `xyz`."""
     depth = obs.get("head_depth")
@@ -118,7 +129,14 @@ def detect_by_depth(ctx, obs, cell_m=0.0025, min_cells=40):
         top = Q[:, 2] >= z_top - 0.006
         if top.sum() < 15:
             continue
-        shape, yaw, centre, feat = classify_top(Q[top][:, :2])
+        try:
+            shape, yaw, centre, feat = classify_top(Q[top][:, :2])
+        except Exception:                     # OpenCV's triangle fit can fail on a thin strip: a lying object
+            shape, yaw, centre, feat = "tipped", None, Q[top][:, :2].mean(0), {}
+        ridge = None
+        if shape == "tipped" and top.sum() >= 25:
+            direction, ratio = ridge_yaw(Q[top][:, :2])
+            ridge = direction if ratio >= 2.0 else None
         xy = centre if centre is not None else Q[top][:, :2].mean(0)
         if feat.get("long_mm", 0) > 110:                       # far too big for one object (an arm, a tool, a heap)
             continue
@@ -127,7 +145,8 @@ def detect_by_depth(ctx, obs, cell_m=0.0025, min_cells=40):
         pix = pix[sat >= np.percentile(sat, 67)]
         o = WorldObject("?", "object", np.array([xy[0], xy[1], float(np.median(Q[top][:, 2]))]), source="depth",
                         extra={"uv": (float(np.median(uu[m][top])), float(np.median(vv[m][top]))), "n_px": int(m.sum()),
-                               "shape_seen": shape, "rgb": [int(c) for c in np.median(pix, axis=0)]})
+                               "shape_seen": shape, "ridge_yaw": ridge,
+                               "rgb": [int(c) for c in np.median(pix, axis=0)]})
         o.shape = shape if shape in ("cube", "cylinder", "triangle") else None
         o.yaw = yaw if o.shape in ("cube", "triangle") else None
         out.append(o)
