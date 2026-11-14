@@ -1,0 +1,30 @@
+2026-11-14 17:31:49,786 robot_sorter INFO adk/bench ready
+2026-11-14 17:31:49,790 aaltonomous.policy_server INFO policy server 'adk/bench' listening on 0.0.0.0:8000
+2026-11-14 17:32:30,233 websockets.server INFO connection open
+2026-11-14 17:32:32,522 robot_sorter INFO [agent] reset task=sort_fixed seed=2001: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 17:32:34,243 robot_sorter INFO [agent t=  0.60] look({})
+2026-11-14 17:32:34,254 robot_sorter INFO [robot t=  0.60] start arms aside (both arm, 0.9 s)
+2026-11-14 17:32:38,309 robot_sorter INFO [robot t=  2.04] arms aside: completed
+2026-11-14 17:32:39,184 robot_sorter INFO [robot t=  2.24] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.72, walls 0.71
+2026-11-14 17:32:40,326 robot_sorter INFO [agent t=  2.64] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.288, 0.154], 'point': [793, 219], 'rgb': [201, 191, 66], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'yellow', 'colour_confidence': 0.98, 'shape': 'cylinder', 'shape_confidence': 0.99}}, {'id': 'obj_2', 'side': 'right', 'position_m': [0.265, -0.019], 'point': [850, 570], 'rgb': [80, 121, 187], 'shape_guess': 'cube', 'yaw_deg_guess': -0.8, 'gemini_label': {'colour': 'blue', 'colour_confidence': 0.98, 'shape': 'cube', 'shape_confidence': 0.97}}, {'id': 'obj_3', 'side': 'right', 'position_m': [0.301, -0.097], 'point': [763, 723], 'rgb': [180, 70, 71], 'shape_guess': 'cube', 'yaw_deg_guess': -44.1, 'gemini_label': {'colour': 'red', 'colour_confidence': 0.98, 'shape': 'cube', 'shape_confidence': 0.92}}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.4}
+2026-11-14 17:32:40,327 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:32:40,337 robot_sorter INFO [agent t=  2.64] pick_and_place({'object_id': 'obj_1', 'bin': 'center'})
+2026-11-14 17:32:40,459 robot_sorter INFO [robot t=  2.64] start pick_and_place obj_1 -> center: grasp and lift (left arm, 3.8 s)
+2026-11-14 17:32:52,811 robot_sorter INFO [robot t=  6.97] pick_and_place obj_1 -> center: grasp and lift: completed
+2026-11-14 17:32:52,820 robot_sorter INFO [robot t=  6.97] start pick_and_place obj_1 -> center: carry and release (left arm, 4.9 s)
+2026-11-14 17:33:07,121 robot_sorter INFO [robot t= 12.07] pick_and_place obj_1 -> center: carry and release: completed
+2026-11-14 17:33:07,127 robot_sorter INFO [robot t= 12.07] start arms aside (both arm, 0.9 s)
+2026-11-14 17:33:11,030 robot_sorter INFO [robot t= 13.50] arms aside: completed
+2026-11-14 17:33:11,081 robot_sorter INFO [agent t= 13.50] pick_and_place -> {'status': 'completed', 'arm': 'left', 'seconds': 8.7, 'object': 'obj_1', 'bin': 'center', 'grasp_at_m': [0.288, 0.154, 0.054], 'grasp': {'grip': 'plain pinch'}, 'holding': 'nothing', 'time_left_s': 107.9, 'grasp_check': {'finger_tracking_error_rad': 0.03, 'object_in_hand': True, 'decided_by': 'finger sensors'}, 'objects_on_counter': [{'id': 'obj_2', 'side': 'right', 'position_m': [0.265, -0.019], 'point': [850, 570], 'rgb': [82, 123, 188], 'shape_guess': 'cube', 'yaw_deg_guess': -0.8, 'gemini_label': {'colour': 'blue', 'colour_confidence': 0.98, 'shape': 'cube', 'shape_confidence': 0.97}}, {'id': 'obj_3', 'side': 'right', 'position_m': [0.301, -0.097], 'point': [763, 723], 'rgb': [181, 71, 72], 'shape_guess': 'cube', 'yaw_deg_guess': -44.1, 'gemini_label': {'colour': 'red', 'colour_confidence': 0.98, 'shape': 'cube', 'shape_confidence': 0.92}}]}
+2026-11-14 17:33:11,081 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:33:11,088 robot_sorter INFO [agent t= 13.50] pick_and_place({'object_id': 'obj_2', 'bin': 'right'})
+2026-11-14 17:33:12,114 robot_sorter INFO [robot t= 13.70] start pick_and_place obj_2 -> right: grasp and lift (right arm, 5.3 s)
+2026-11-14 17:33:27,760 robot_sorter INFO [robot t= 19.47] pick_and_place obj_2 -> right: grasp and lift: completed
+2026-11-14 17:33:27,768 robot_sorter INFO [robot t= 19.47] start pick_and_place obj_2 -> right: carry and release (right arm, 4.5 s)
+2026-11-14 17:33:41,240 robot_sorter INFO [robot t= 24.17] pick_and_place obj_2 -> right: carry and release: completed
+2026-11-14 17:33:41,247 robot_sorter INFO [robot t= 24.17] start arms aside (both arm, 0.9 s)
+2026-11-14 17:33:45,275 robot_sorter INFO [robot t= 25.60] arms aside: completed
+2026-11-14 17:33:45,325 robot_sorter INFO [agent t= 25.60] pick_and_place -> {'status': 'completed', 'arm': 'right', 'seconds': 9.7, 'object': 'obj_2', 'bin': 'right', 'grasp_at_m': [0.265, -0.019, 0.054], 'grasp': {'grip': 'flat faces'}, 'holding': 'nothing', 'time_left_s': 95.8, 'grasp_check': {'finger_tracking_error_rad': 0.051, 'object_in_hand': True, 'decided_by': 'finger sensors'}, 'objects_on_counter': [{'id': 'obj_3', 'side': 'right', 'position_m': [0.282, -0.102], 'point': [807, 738], 'rgb': [193, 79, 79], 'shape_guess': 'cube', 'yaw_deg_guess': -5.3, 'gemini_label': {'colour': 'red', 'colour_confidence': 0.98, 'shape': 'cube', 'shape_confidence': 0.92}}]}
+2026-11-14 17:33:45,326 google_adk.google.adk.telemetry._metrics WARNING Skipping missing token usage metadata for agent robot_sorter and model bench
+2026-11-14 17:33:45,336 robot_sorter INFO [agent t= 25.60] pick_and_place({'object_id': 'obj_3', 'bin': 'left'})
+2026-11-14 17:33:50,830 robot_sorter INFO [robot t= 27.40] start pick_and_place obj_3 -> left: grasp and lift (left arm, 3.8 s)
