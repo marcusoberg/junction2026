@@ -100,14 +100,15 @@ def _min_arm_distance(ctx, arm, hand):
     return best
 
 
-def _park_plan(robot, ctx, arm_q, hand_q):
-    """Joint-space move of every arm that holds nothing to its parked pose, hands open. None if already there."""
+def _park_plan(robot, ctx, arm_q, hand_q, keep=None):
+    """Joint-space move of every arm that holds nothing to its parked pose, hands open. None if already there.
+    keep: an arm to leave where it is (the one about to move, or one waiting for its next object)."""
     from agent.skills.motion import Trajectory
     if robot.aside is None:
         return None
     to_a, to_h = arm_q.copy(), hand_q.copy()
     for side in ("left", "right"):
-        if side != robot.holding:
+        if side != robot.holding and side != keep:
             sl = ctx.kin.sl(side)
             to_a[sl], to_h[sl] = robot.aside[sl], ctx.post["open"][sl]
     if np.abs(to_a - arm_q).max() < 1e-3 and np.abs(to_h - hand_q).max() < 1e-3:
@@ -119,12 +120,58 @@ def _park_plan(robot, ctx, arm_q, hand_q):
     return Trajectory(True, "park", {}, a, h, [("park", 0, len(a))])
 
 
-async def _park(robot):
+async def _park(robot, keep=None):
     """Arms aside: out of each other's way and out of the head camera's view."""
     start = robot.command_state()
-    traj = await asyncio.to_thread(_park_plan, robot, robot.ctx, *start)
+    traj = await asyncio.to_thread(_park_plan, robot, robot.ctx, *start, keep)
     if traj is not None:
-        await _run(robot, traj, "arms aside", start)
+        await _run(robot, traj, "arms aside" if keep is None else f"{'right' if keep == 'left' else 'left'} arm aside", start)
+    if robot.waiting != keep:
+        robot.waiting = None
+
+
+CHAIN = os.environ.get("ROBOT_CHAIN", "1") == "1"
+
+
+async def _next_for_arm(robot, side, placed_id, bin_name, end_arm, end_hand):
+    """While an arm carries an object to its bin: should it go back home afterwards, or wait above the bin because
+    its next object is right there? Saves the trip home and out again (about 3 s per object).
+
+    Candidates are the other objects on the counter that this arm is the nearer one to. The Gemini Decisions API
+    picks which of them to take next (or none), from the head image and the instruction; then the planner checks
+    that this arm can grasp it from where it will be. Returns the object id, or None = go home."""
+    from . import arms, decisions
+    ctx = robot.ctx
+    cands = [o for o in robot.seen if o["id"] != placed_id and o["id"] in robot.objects
+             and arms.order(ctx, robot.objects[o["id"]].xyz, None, end_arm)[0] == side]
+    if not cands:
+        return None, "no other object on this arm's side"
+    choice, why = cands[0]["id"], "nearest object on this arm's side"
+    if decisions.available() and robot.seen_rgb is not None:
+        try:
+            options = {o["id"]: f"{(o.get('gemini_label') or {}).get('colour', '')} {(o.get('gemini_label') or {}).get('shape', o.get('shape_guess') or '')}"
+                                f" on the robot's {o['side']}".strip() for o in cands}
+            options["none"] = f"None of these should be picked next by the {side} arm: send the arm home."
+            a = await asyncio.to_thread(
+                decisions.ask,
+                "A humanoid robot sorts small coloured blocks from a counter into three bins (left, center, right). "
+                f"The instruction is: \"{robot.instruction}\". Its {side} arm is carrying one block to the {bin_name} "
+                "bin right now (ignore that block).",
+                [decisions.image_block(robot.seen_rgb)],
+                f"Which block should the {side} arm pick up next? Choose a block that the instruction sends to a "
+                f"bin, the easiest to reach first.", "choice", options)
+            if float(a.get("confidence", 0)) >= 0.5:
+                choice, why = a.get("choice"), f"Gemini Decisions ({a.get('confidence'):.2f})"
+        except Exception as e:  # noqa: BLE001
+            robot.log(f"[tool] next-object decision failed: {e!r}"[:200])
+    if choice in (None, "none") or choice not in robot.objects:
+        return None, why
+    nxt = _target(robot, choice, None, None, None)
+    plan = await asyncio.to_thread(_plan_grasp, robot, nxt, side, _pick_call(ctx, nxt, None), {}, end_arm, end_hand,
+                                   None, False)
+    if not plan.ok:
+        return None, f"{choice}: no grasp plan from above the bin"
+    return choice, why
 
 
 async def _show(tool_context, name, robot, request):
@@ -242,6 +289,7 @@ def _detect(robot):
             out[-1]["gemini_label"] = {"colour": lab["colour"], "colour_confidence": lab["colour_confidence"],
                                        "shape": lab["shape"], "shape_confidence": lab["shape_confidence"]}
     robot.trace.frame_dump(obs, robot.t, out)
+    robot.seen, robot.seen_rgb = out, rgb
     return out
 
 
@@ -441,6 +489,13 @@ async def _move(label, plan, on_done=None, look_after=False, **echo):
     if robot.time_left() is not None and seconds > robot.time_left():
         return _result("failed", reason=f"not enough time left for a {seconds:.0f} s move", **echo)
     close = await _too_close(robot, traj)
+    if close and robot.waiting and robot.waiting != traj.side:
+        await _park(robot, keep=traj.side)            # the other arm was waiting in the way: move it aside, plan again
+        start = robot.command_state()
+        traj = await asyncio.to_thread(plan, robot.ctx, *start)
+        if not traj.ok:
+            return _result("failed", reason=f"no safe plan: {traj.reason}"[:400], **echo)
+        close = await _too_close(robot, traj)
     if close:
         return _result("failed", reason=close, **echo)
     outcome = await _run(robot, traj, label, start, settle=not look_after)
@@ -512,19 +567,26 @@ async def _grasp_move(label, plan, on_done, obj, look_after, **echo):
     seconds = traj.ticks / HZ
     if robot.time_left() is not None and seconds > robot.time_left():
         return _result("failed", reason=f"not enough time left for a {seconds:.0f} s move", **echo)
-    # (the mock world has no finger contact, so the check only makes sense on the simulator or the robot)
     close = await _too_close(robot, traj)
+    if close and any(np.abs(start[0][robot.ctx.kin.sl(o)] - robot.aside[robot.ctx.kin.sl(o)]).max() > 1e-3
+                     for o in ("left", "right") if o != traj.side and robot.aside is not None):
+        await _park(robot, keep=traj.side)            # the other arm was waiting in the way: move it aside, plan again
+        start = robot.command_state()
+        traj = await asyncio.to_thread(plan, robot.ctx, *start)
+        if not traj.ok:
+            return _result("failed", reason=f"no safe plan: {traj.reason}"[:400], **echo)
+        close = await _too_close(robot, traj)
     if close:
         return _result("failed", reason=close, **echo)
+    # (the mock world has no finger contact, so the grasp check only makes sense on the simulator or the robot)
     lift_end = next((e for n, s, e in traj.phases if n == "lift"), None) if GRASP_CHECK and robot.world is None else None
-    if lift_end is None:
-        parts = [traj]
-    else:
-        parts = [Trajectory(True, traj.skill, traj.args, traj.arm[:lift_end], traj.hand[:lift_end], side=traj.side)]
-        if lift_end < traj.ticks:
-            parts.append(Trajectory(True, traj.skill, traj.args, traj.arm[lift_end:], traj.hand[lift_end:], side=traj.side))
+    home_start = next((s for n, s, e in traj.phases if n == "home"), None) if CHAIN and bin_name_of(echo) else None
+    cut = lambda i, j: Trajectory(True, traj.skill, traj.args, traj.arm[i:j], traj.hand[i:j], side=traj.side)  # noqa: E731
     was = np.asarray(obj.xyz, float).copy()
-    outcome = await _run(robot, parts[0], label if len(parts) == 1 else f"{label}: grasp and lift", start)
+    robot.waiting = None
+    first_end = lift_end if lift_end is not None else (home_start if home_start is not None else traj.ticks)
+    outcome = await _run(robot, cut(0, first_end), label if first_end == traj.ticks else f"{label}: grasp and lift"
+                         if lift_end is not None else f"{label}: to the bin", start, settle=first_end == lift_end)
     check = None
     if outcome == "completed" and lift_end is not None:
         check = await _grasp_check(robot, traj.side)
@@ -552,8 +614,22 @@ async def _grasp_move(label, plan, on_done, obj, look_after, **echo):
             except Exception as e:  # noqa: BLE001
                 out["objects_on_counter"] = f"look failed: {e!r}"[:200]
             return out
-        if len(parts) > 1:
-            outcome = await _run(robot, parts[1], f"{label}: carry and release", robot.command_state(), settle=False)
+    stay, why = None, ""
+    if outcome == "completed" and first_end < traj.ticks:
+        mid = home_start if home_start is not None else traj.ticks
+        decide = None
+        if home_start is not None:        # decided while the arm carries the object: no time is lost on it
+            decide = asyncio.create_task(_next_for_arm(robot, traj.side, obj.id, bin_name_of(echo),
+                                                       traj.arm[home_start - 1].copy(), traj.hand[home_start - 1].copy()))
+        if mid > first_end:
+            outcome = await _run(robot, cut(first_end, mid), f"{label}: carry and release", robot.command_state(), settle=False)
+        if decide is not None:
+            try:
+                stay, why = await decide
+            except Exception as e:  # noqa: BLE001
+                stay, why = None, f"decision failed: {e!r}"[:120]
+        if outcome == "completed" and mid < traj.ticks and stay is None:
+            outcome = await _run(robot, cut(mid, traj.ticks), f"{label}: back home", robot.command_state(), settle=False)
     if outcome != "completed":
         robot.holding = robot.held_id = None
         return _result("aborted", reason=outcome, **echo)
@@ -561,6 +637,20 @@ async def _grasp_move(label, plan, on_done, obj, look_after, **echo):
     out = _result("completed", arm=traj.side, seconds=round(seconds, 1), **echo)
     if check is not None:
         out["grasp_check"] = check
+    if stay is not None:
+        # The arm waits above the bin for its next object instead of going home and out again. No new look (the
+        # arm is in the camera's view): the list is the last one, without the object just placed.
+        robot.waiting = traj.side
+        robot.objects.pop(obj.id, None)
+        robot.seen = [o for o in robot.seen if o["id"] != obj.id]
+        out["arm_waiting"] = {"arm": traj.side, "next_object": stay, "chosen_by": why,
+                              "note": f"the {traj.side} arm is waiting above the bin: pick_and_place {stay} next "
+                                      "saves about 3 s. Any other call works too."}
+        out["objects_on_counter"] = robot.seen
+        robot.trace.write("arm_waiting", t=round(robot.t, 2), arm=traj.side, next_object=stay, chosen_by=why)
+        return out
+    if home_start is not None:
+        robot.trace.write("arm_home", t=round(robot.t, 2), arm=traj.side, why=why)
     await _park(robot)
     if look_after and not robot.holding:
         try:
@@ -568,6 +658,10 @@ async def _grasp_move(label, plan, on_done, obj, look_after, **echo):
         except Exception as e:  # noqa: BLE001
             out["objects_on_counter"] = f"look failed: {e!r}"[:200]
     return out
+
+
+def bin_name_of(echo):
+    return echo.get("bin")
 
 
 def _pick_and_place_call(ctx, obj, bin_name, approach, drop):

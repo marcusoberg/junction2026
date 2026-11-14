@@ -1,0 +1,1 @@
+{"t": 53.870000000000005, "detections": [{"id": "obj_1", "side": "left", "position_m": [0.274, 0.128], "point": [801, 288], "rgb": [207, 199, 25], "shape_guess": "lying on its side", "yaw_deg_guess": null, "gemini_label": {"colour": "yellow", "colour_confidence": 0.99, "shape": "triangle", "shape_confidence": 0.99}}]}

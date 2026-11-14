@@ -52,6 +52,9 @@ A new session starts a new mock episode with the next layout.
 |---|---|
 | `look` | the oracle's look, but from the head camera: any saturated colour + depth (the organisers' detector, extended beyond the sim's red / yellow / blue). `ROBOT_PERCEPTION=sim` uses the oracle's exact simulator poses (not allowed in a submission) |
 | `view_camera` | not from the oracle: head, wrist or depth image at full resolution, optional zoom region, object ids drawn on |
+| `ask_gemini` | not from the oracle: one closed question about a camera image to the Gemini Decisions API (about a second) |
+| `choose_arm` | what each arm can do for an object: distance, reach, grasp plan, full plan. The rule is in `arms.py` |
+| `check_plan` | plans a grasp with every safety check and moves nothing, to find a variation that works after "no safe plan" |
 | `read_proprioception` | not from the oracle: joint angles and speeds, where each hand is, how far it is closed, tracking errors |
 | `pick_and_place` | the whole planned move; with `shape` + `yaw_deg`, the face-aligned grasp for cubes and triangles |
 | `pick`, `place` | the same move cut in two, so the model can check the hand in between |
@@ -73,6 +76,13 @@ pointing at it in the head image (`point`, `[y, x]` 0..1000). A call with no saf
   move stops there, the hand opens, the arm goes back, and the tool returns `missed` with how far the attempt
   pushed the object. Threshold `ROBOT_GRASP_ERR_RAD` (default 0.010); it has not been measured on the real hands.
   `ROBOT_GRASP_CHECK=0` turns it off.
+- **Gemini Decisions API (`decisions.py`, written from Google's documentation).** Used in four places: `look`
+  labels every object's colour and shape in one request; the grasp check asks it to look when the finger sensors
+  are unclear; while an arm carries an object it chooses that arm's next object; and `ask_gemini` puts any
+  closed question to it. A failed or slow call never blocks a move.
+- **Arm waits for its next object.** After a release, an arm with another object on its side stays above the bin
+  instead of going home and out again (about 3 s saved per object; `ROBOT_CHAIN=0` turns it off). In the mock
+  world this cut motion time from 65 to 58 s on five objects. Not yet run in the Isaac sim.
 - **No ground truth.** Object positions come only from the head camera's colour and depth images. The policy
   process cannot import `zmq`, the only way to reach the simulator's scene service, and the Modal environment
   does not install it. What it does take from the organisers' files: the bins' positions and size, the counter
