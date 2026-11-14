@@ -1,0 +1,14 @@
+# secrets and local environments: never commit
+.env
+.venv/
+.adk/
+# outputs fetched from Modal (videos, logs) and caches
+sim_out/
+sim/out/
+__pycache__/
+*.pyc
+.DS_Store
+# the organisers' repo is cloned separately (github.com/zupermiez/aaltonomous-humanoid)
+aaltonomous-humanoid/
+# model weights
+submission/weights/

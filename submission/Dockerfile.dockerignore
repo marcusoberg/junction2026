@@ -1,0 +1,13 @@
+# BuildKit picks this up for -f submission/Dockerfile: send only what the image copies.
+*
+!submission/server.py
+!submission/weights
+!aaltonomous-humanoid/aaltonomous/__init__.py
+!aaltonomous-humanoid/aaltonomous/deploy/__init__.py
+!aaltonomous-humanoid/aaltonomous/deploy/protocol.py
+!aaltonomous-humanoid/aaltonomous/deploy/policy_server.py
+!aaltonomous-humanoid/aaltonomous/interface/__init__.py
+!aaltonomous-humanoid/aaltonomous/interface/safety.py
+!aaltonomous-humanoid/aaltonomous/interface/joint_spec.yaml
+!aaltonomous-humanoid/third_party/xr_teleoperate/assets/g1/g1_body29_hand14.urdf
+**/__pycache__
