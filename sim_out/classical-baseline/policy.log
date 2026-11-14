@@ -1,0 +1,54 @@
+2026-11-14 12:26:56,965 INFO classical baseline loaded in 0.1 s
+2026-11-14 12:26:57,062 INFO policy server 'classical-rung1' listening on 0.0.0.0:8000
+2026-11-14 12:27:47,811 INFO connection open
+2026-11-14 12:27:49,663 INFO reset task=sort_fixed seed=1000 instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 12:27:49,686 INFO [classical t=  0.00] to home (0.6 s)
+2026-11-14 12:27:53,414 INFO [classical t=  1.07] execute yellow right arm -> center bin  grasp=(+0.30,-0.10,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  9.3s  safety_clips=0
+2026-11-14 12:28:24,783 INFO [classical t= 10.87] execute red    left  arm -> left bin  grasp=(+0.30,+0.15,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  7.7s  safety_clips=0
+2026-11-14 12:28:50,225 INFO [classical t= 19.07] execute blue   right arm -> right bin  grasp=(+0.32,+0.02,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=2.2mm max_tilt=0deg  9.8s  safety_clips=0
+2026-11-14 12:29:22,606 INFO [classical t= 29.40] nothing left to sort (0 detections)
+2026-11-14 12:29:29,454 INFO reset task=sort_fixed seed=1001 instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 12:29:29,466 INFO [classical t=  0.00] to home (0.6 s)
+2026-11-14 12:29:32,824 INFO [classical t=  1.04] execute yellow left  arm -> center bin  grasp=(+0.26,+0.09,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.7mm max_tilt=0deg  10.2s  safety_clips=0
+2026-11-14 12:30:04,737 INFO [classical t= 11.70] execute blue   right arm -> right bin  grasp=(+0.28,+0.00,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=5.8mm max_tilt=0deg  9.6s  safety_clips=0
+2026-11-14 12:30:34,535 INFO [classical t= 21.84] execute red    left  arm -> left bin  grasp=(+0.33,-0.05,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=0.1mm max_tilt=0deg  9.6s  safety_clips=0
+2026-11-14 12:31:04,492 INFO [classical t= 31.90] execute blue   right arm -> right bin  grasp=(+0.28,+0.00,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=5.9mm max_tilt=1deg  9.7s  safety_clips=0
+2026-11-14 12:31:34,709 INFO [classical t= 42.07] execute red    left  arm -> left bin  grasp=(+0.31,-0.04,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=5.0mm max_tilt=0deg  9.8s  safety_clips=0
+2026-11-14 12:32:04,413 INFO [classical t= 52.40] execute red    left  arm -> left bin  grasp=(+0.29,-0.04,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=5.2mm max_tilt=0deg  9.9s  safety_clips=0
+2026-11-14 12:32:34,740 INFO [classical t= 62.77] execute red    left  arm -> left bin  grasp=(+0.26,-0.04,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=4.7mm max_tilt=1deg  9.9s  safety_clips=0
+2026-11-14 12:33:05,349 INFO [classical t= 73.20] execute blue   right arm -> right bin  grasp=(+0.24,+0.02,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=5.2mm max_tilt=1deg  10.5s  safety_clips=0
+2026-11-14 12:33:36,094 INFO [classical t= 84.20] execute blue   right arm -> right bin  grasp=(+0.23,+0.02,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=5.6mm max_tilt=1deg  10.7s  safety_clips=0
+2026-11-14 12:34:09,857 INFO [classical t= 95.80] execute red    left  arm -> left bin  grasp=(+0.23,-0.06,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=5.0mm max_tilt=1deg  11.3s  safety_clips=0
+2026-11-14 12:34:45,933 INFO [classical t=107.77] execute blue   right arm -> right bin  grasp=(+0.30,+0.15,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=3.2mm max_tilt=1deg  10.4s  safety_clips=0
+2026-11-14 12:35:17,422 INFO [classical t=119.07] not enough time for red (11 s)
+2026-11-14 12:35:23,349 INFO reset task=sort_fixed seed=1002 instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 12:35:23,361 INFO [classical t=  0.00] to home (0.6 s)
+2026-11-14 12:35:26,398 INFO [classical t=  1.04] execute blue   right arm -> right bin  grasp=(+0.33,-0.10,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  8.0s  safety_clips=0
+2026-11-14 12:35:50,765 INFO [classical t=  9.50] execute yellow left  arm -> center bin  grasp=(+0.29,+0.12,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  9.2s  safety_clips=0
+2026-11-14 12:36:19,925 INFO [classical t= 19.24] execute blue   right arm -> right bin  grasp=(+0.29,-0.03,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=3.9mm max_tilt=0deg  9.2s  safety_clips=0
+2026-11-14 12:36:48,256 INFO [classical t= 29.34] execute red    left  arm -> left bin  grasp=(+0.26,-0.15,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=5.7mm max_tilt=1deg  10.9s  safety_clips=0
+2026-11-14 12:37:21,402 INFO [classical t= 41.10] execute red    left  arm -> left bin  grasp=(+0.26,-0.15,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=5.7mm max_tilt=1deg  11.0s  safety_clips=0
+2026-11-14 12:37:55,105 INFO [classical t= 52.97] execute red    left  arm -> left bin  grasp=(+0.24,-0.13,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=5.2mm max_tilt=1deg  11.2s  safety_clips=0
+2026-11-14 12:38:28,752 INFO [classical t= 65.10] execute red    left  arm -> left bin  grasp=(+0.23,-0.12,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=5.1mm max_tilt=1deg  11.5s  safety_clips=0
+2026-11-14 12:39:02,108 INFO [classical t= 77.07] nothing left to sort (0 detections)
+2026-11-14 12:39:08,337 INFO reset task=sort_fixed seed=1003 instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 12:39:08,350 INFO [classical t=  0.00] to home (0.6 s)
+2026-11-14 12:39:11,412 INFO [classical t=  1.04] execute yellow right arm -> center bin  grasp=(+0.33,-0.13,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  8.4s  safety_clips=0
+2026-11-14 12:39:37,663 INFO [classical t=  9.97] execute yellow right arm -> center bin  grasp=(+0.32,-0.12,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  8.8s  safety_clips=0
+2026-11-14 12:40:04,341 INFO [classical t= 19.24] execute red    left  arm -> left bin  grasp=(+0.30,-0.05,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=4.9mm max_tilt=0deg  10.0s  safety_clips=0
+2026-11-14 12:40:33,965 INFO [classical t= 29.70] execute blue   right arm -> right bin  grasp=(+0.32,+0.06,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=3.7mm max_tilt=0deg  10.2s  safety_clips=0
+2026-11-14 12:41:04,306 INFO [classical t= 40.37] nothing left to sort (0 detections)
+2026-11-14 12:41:10,251 INFO reset task=sort_fixed seed=1004 instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 12:41:10,264 INFO [classical t=  0.00] to home (0.6 s)
+2026-11-14 12:41:13,078 INFO [classical t=  1.04] execute yellow left  arm -> center bin  grasp=(+0.32,+0.14,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  8.4s  safety_clips=0
+2026-11-14 12:41:37,052 INFO [classical t=  9.97] execute yellow right arm -> center bin  grasp=(+0.26,-0.04,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=4.3mm max_tilt=0deg  10.6s  safety_clips=0
+2026-11-14 12:42:07,789 INFO [classical t= 21.04] execute yellow right arm -> center bin  grasp=(+0.27,-0.04,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=4.5mm max_tilt=0deg  10.5s  safety_clips=0
+2026-11-14 12:42:38,604 INFO [classical t= 32.00] execute yellow left  arm -> center bin  grasp=(+0.30,+0.15,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  8.5s  safety_clips=0
+2026-11-14 12:43:07,045 INFO [classical t= 41.04] execute red    left  arm -> left bin  grasp=(+0.32,+0.03,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=0.3mm max_tilt=0deg  9.5s  safety_clips=0
+2026-11-14 12:43:36,149 INFO [classical t= 51.00] execute red    left  arm -> left bin  grasp=(+0.32,-0.08,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  10.0s  safety_clips=0
+2026-11-14 12:44:07,287 INFO [classical t= 61.47] execute red    left  arm -> left bin  grasp=(+0.32,-0.08,+0.03) drop=(+0.45,+0.21,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  10.0s  safety_clips=0
+2026-11-14 12:44:38,695 INFO [classical t= 71.94] execute yellow right arm -> center bin  grasp=(+0.27,-0.00,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=5.8mm max_tilt=1deg  10.1s  safety_clips=0
+2026-11-14 12:45:09,298 INFO [classical t= 82.54] execute yellow left  arm -> center bin  grasp=(+0.25,+0.01,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=5.7mm max_tilt=1deg  10.9s  safety_clips=0
+2026-11-14 12:45:42,386 INFO [classical t= 94.14] execute blue   right arm -> right bin  grasp=(+0.27,+0.10,+0.03) drop=(+0.45,-0.21,+0.13)  IK ok max_err=5.3mm max_tilt=1deg  10.8s  safety_clips=0
+2026-11-14 12:46:14,099 INFO [classical t=105.44] execute yellow left  arm -> center bin  grasp=(+0.28,+0.15,+0.03) drop=(+0.45,+0.00,+0.13)  IK ok max_err=0.0mm max_tilt=0deg  8.9s  safety_clips=0
+2026-11-14 12:46:41,218 INFO [classical t=114.84] not enough time for blue (14 s)

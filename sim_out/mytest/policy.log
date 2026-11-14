@@ -1,0 +1,21 @@
+2026-11-14 08:04:05,661 aaltonomous.policy_server INFO policy server 'chunk-vla/pi05' listening on 0.0.0.0:8000
+2026-11-14 08:04:05,661 websockets.server INFO server listening on 0.0.0.0:8000
+The PI05 model is a direct port of the OpenPI implementation. 
+This implementation follows the original OpenPI structure for compatibility. 
+Original implementation: https://github.com/Physical-Intelligence/openpi
+2026-11-14 08:05:52,048 root INFO Enabled gradient checkpointing for PI05Pytorch model
+Loading model from: /runs/pi05-pickcube-v1/checkpoints/002000/pretrained_model
+✓ Loaded state dict from model.safetensors
+2026-11-14 08:05:56,047 root WARNING Vision embedding key might need handling: model.paligemma_with_expert.paligemma.model.vision_tower.embeddings.patch_embedding.bias
+2026-11-14 08:05:56,047 root WARNING Vision embedding key might need handling: model.paligemma_with_expert.paligemma.model.vision_tower.embeddings.patch_embedding.weight
+All keys loaded successfully!
+2026-11-14 08:06:01,660 submission INFO loaded /runs/pi05-pickcube-v1/checkpoints/002000/pretrained_model on cuda in 106.0 s; cameras ['cam_high<-head_rgb', 'cam_left_wrist<-left_wrist_rgb', 'cam_right_wrist<-right_wrist_rgb']; chunk 50
+2026-11-14 08:06:02,724 submission INFO warm-up inference 0.88 s, then 0.182 s per chunk
+2026-11-14 08:06:02,724 submission INFO model ready 118.6 s after start: pi05 (NVIDIA L40S, torch 2.15.0+cu132, cuda 13.2)
+2026-11-14 08:06:06,205 websockets.server INFO connection open
+2026-11-14 08:06:07,957 submission INFO reset: task=sort_fixed instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 08:11:48,812 websockets.server INFO connection closed
+2026-11-14 08:11:49,162 websockets.server INFO connection open
+2026-11-14 08:11:50,365 submission INFO episode end: 3600 ticks, 113 chunks, 8 hold ticks, 217 ticks shaped by the safety layer, inference 195 ms median
+2026-11-14 08:11:50,365 submission INFO reset: task=sort_fixed instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 08:13:57,218 websockets.server INFO connection closed

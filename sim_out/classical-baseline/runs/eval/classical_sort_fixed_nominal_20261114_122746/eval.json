@@ -1,0 +1,707 @@
+{
+ "summary": {
+  "policy": "ws://localhost:8000",
+  "team": "classical",
+  "task": "sort_fixed",
+  "variant": "nominal",
+  "dr": null,
+  "trials": 5,
+  "seeds": [
+   1000,
+   1001,
+   1002,
+   1003,
+   1004
+  ],
+  "score_mean": 3.2,
+  "score_std": 0.748,
+  "score_frac": 0.8,
+  "objects": 20,
+  "objects_correct": 16,
+  "object_success": 0.8,
+  "episodes_all_correct": 2,
+  "outcome_counts": {
+   "correct": 16,
+   "counter": 4
+  },
+  "end_reasons": {
+   "done": 5
+  },
+  "safety_clipped_steps_total": 0,
+  "safety_clipped_steps_max": 0,
+  "effective_hz_min": 30.0,
+  "command_hz_min": 29.96,
+  "policy_hz_rt_min": 93.62,
+  "clock": "sim",
+  "rtf_min": 0.316,
+  "rtf_mean": 0.341,
+  "gate": {
+   "passed": true,
+   "failed_trials": [],
+   "max_clips": 0,
+   "min_hz": 27.0
+  }
+ },
+ "trials": [
+  {
+   "episode": 0,
+   "seed": 1000,
+   "instruction": "Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.",
+   "end_reason": "done",
+   "ticks": 884,
+   "hold_ticks": 1,
+   "wait_ticks": 1,
+   "wall_s": 93.174,
+   "clock": "sim",
+   "sim_s": 29.47,
+   "rtf": 0.316,
+   "effective_hz": 30.0,
+   "command_hz": 29.96,
+   "command_hz_wall": 9.48,
+   "policy_calls": 93,
+   "latency_ms_mean": 98.27,
+   "latency_ms_max": 208.62,
+   "ready_frac": 0.9989,
+   "policy_hz_rt": 96.62,
+   "safety": {
+    "steps": 884,
+    "clipped_steps": 0,
+    "mode": "ok",
+    "counts": {}
+   },
+   "success": null,
+   "task": "sort_fixed",
+   "variant": "nominal",
+   "layout": [
+    {
+     "color": "yellow",
+     "x": 0.349,
+     "y": 0.157,
+     "yaw": -0.485,
+     "shape": "cylinder"
+    },
+    {
+     "color": "blue",
+     "x": 0.468,
+     "y": 0.18,
+     "yaw": 0.48,
+     "shape": "cylinder"
+    },
+    {
+     "color": "red",
+     "x": 0.615,
+     "y": 0.167,
+     "yaw": -0.345,
+     "shape": "cube"
+    }
+   ],
+   "mapping": {
+    "red": "left",
+    "yellow": "center",
+    "blue": "right"
+   },
+   "outcomes": [
+    {
+     "name": "obj_red_cube_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_blue_cylinder_0",
+     "outcome": "correct"
+    }
+   ],
+   "score": 3,
+   "max_score": 3,
+   "n_objects": 3,
+   "n_correct": 3,
+   "all_correct": true,
+   "settle_s": 0.04,
+   "episode_wall_s": 93.3,
+   "home_err": 0.012,
+   "final_objects": [
+    {
+     "name": "obj_red_cube_0",
+     "pos": [
+      0.44682,
+      0.22189,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "pos": [
+      0.43786,
+      -0.00852,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_blue_cylinder_0",
+     "pos": [
+      0.44735,
+      -0.22033,
+      0.0355
+     ],
+     "speed": 0.0
+    }
+   ],
+   "dr_params": null,
+   "gate_ok": true,
+   "gate_why": []
+  },
+  {
+   "episode": 1,
+   "seed": 1001,
+   "instruction": "Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.",
+   "end_reason": "done",
+   "ticks": 3574,
+   "hold_ticks": 0,
+   "wait_ticks": 0,
+   "wall_s": 348.16,
+   "clock": "sim",
+   "sim_s": 119.14,
+   "rtf": 0.342,
+   "effective_hz": 30.0,
+   "command_hz": 30.0,
+   "command_hz_wall": 10.27,
+   "policy_calls": 371,
+   "latency_ms_mean": 98.67,
+   "latency_ms_max": 211.91,
+   "ready_frac": 1.0,
+   "policy_hz_rt": 97.63,
+   "safety": {
+    "steps": 3574,
+    "clipped_steps": 0,
+    "mode": "ok",
+    "counts": {}
+   },
+   "success": null,
+   "task": "sort_fixed",
+   "variant": "nominal",
+   "layout": [
+    {
+     "color": "red",
+     "x": 0.306,
+     "y": 0.134,
+     "yaw": 0.204,
+     "shape": "cube"
+    },
+    {
+     "color": "blue",
+     "x": 0.615,
+     "y": 0.174,
+     "yaw": -0.387,
+     "shape": "cube"
+    },
+    {
+     "color": "blue",
+     "x": 0.447,
+     "y": 0.135,
+     "yaw": -0.219,
+     "shape": "cylinder"
+    },
+    {
+     "color": "yellow",
+     "x": 0.533,
+     "y": 0.122,
+     "yaw": -0.609,
+     "shape": "cylinder"
+    },
+    {
+     "color": "red",
+     "x": 0.381,
+     "y": 0.186,
+     "yaw": -0.143,
+     "shape": "cube"
+    }
+   ],
+   "mapping": {
+    "red": "left",
+    "yellow": "center",
+    "blue": "right"
+   },
+   "outcomes": [
+    {
+     "name": "obj_red_cube_0",
+     "outcome": "counter"
+    },
+    {
+     "name": "obj_red_cube_1",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_blue_cube_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_blue_cylinder_0",
+     "outcome": "correct"
+    }
+   ],
+   "score": 4,
+   "max_score": 5,
+   "n_objects": 5,
+   "n_correct": 4,
+   "all_correct": false,
+   "settle_s": 0.01,
+   "episode_wall_s": 348.3,
+   "home_err": 0.012,
+   "final_objects": [
+    {
+     "name": "obj_red_cube_0",
+     "pos": [
+      0.274,
+      -0.144,
+      0.0325
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_red_cube_1",
+     "pos": [
+      0.44529,
+      0.2274,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_blue_cube_0",
+     "pos": [
+      0.4418,
+      -0.21357,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "pos": [
+      0.43147,
+      0.00659,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_blue_cylinder_0",
+     "pos": [
+      0.46324,
+      -0.26881,
+      0.03462
+     ],
+     "speed": 0.0
+    }
+   ],
+   "dr_params": null,
+   "gate_ok": true,
+   "gate_why": []
+  },
+  {
+   "episode": 2,
+   "seed": 1002,
+   "instruction": "Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.",
+   "end_reason": "done",
+   "ticks": 2314,
+   "hold_ticks": 0,
+   "wait_ticks": 0,
+   "wall_s": 218.926,
+   "clock": "sim",
+   "sim_s": 77.14,
+   "rtf": 0.352,
+   "effective_hz": 30.0,
+   "command_hz": 30.0,
+   "command_hz_wall": 10.57,
+   "policy_calls": 242,
+   "latency_ms_mean": 97.08,
+   "latency_ms_max": 182.84,
+   "ready_frac": 1.0,
+   "policy_hz_rt": 98.5,
+   "safety": {
+    "steps": 2314,
+    "clipped_steps": 0,
+    "mode": "ok",
+    "counts": {}
+   },
+   "success": null,
+   "task": "sort_fixed",
+   "variant": "nominal",
+   "layout": [
+    {
+     "color": "blue",
+     "x": 0.412,
+     "y": 0.144,
+     "yaw": 0.086,
+     "shape": "cylinder"
+    },
+    {
+     "color": "yellow",
+     "x": 0.566,
+     "y": 0.148,
+     "yaw": 0.674,
+     "shape": "cylinder"
+    },
+    {
+     "color": "red",
+     "x": 0.291,
+     "y": 0.12,
+     "yaw": 0.498,
+     "shape": "cylinder"
+    },
+    {
+     "color": "blue",
+     "x": 0.34,
+     "y": 0.187,
+     "yaw": -0.201,
+     "shape": "cube"
+    }
+   ],
+   "mapping": {
+    "red": "left",
+    "yellow": "center",
+    "blue": "right"
+   },
+   "outcomes": [
+    {
+     "name": "obj_blue_cube_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_red_cylinder_0",
+     "outcome": "counter"
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_blue_cylinder_0",
+     "outcome": "counter"
+    }
+   ],
+   "score": 2,
+   "max_score": 4,
+   "n_objects": 4,
+   "n_correct": 2,
+   "all_correct": false,
+   "settle_s": 0.07,
+   "episode_wall_s": 219.1,
+   "home_err": 0.012,
+   "final_objects": [
+    {
+     "name": "obj_blue_cube_0",
+     "pos": [
+      0.44747,
+      -0.22718,
+      0.03541
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_red_cylinder_0",
+     "pos": [
+      0.16718,
+      -0.12178,
+      0.03167
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "pos": [
+      0.43744,
+      -0.00662,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_blue_cylinder_0",
+     "pos": [
+      0.44213,
+      -0.21469,
+      0.08034
+     ],
+     "speed": 0.0
+    }
+   ],
+   "dr_params": null,
+   "gate_ok": true,
+   "gate_why": []
+  },
+  {
+   "episode": 3,
+   "seed": 1003,
+   "instruction": "Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.",
+   "end_reason": "done",
+   "ticks": 1213,
+   "hold_ticks": 0,
+   "wait_ticks": 0,
+   "wall_s": 116.173,
+   "clock": "sim",
+   "sim_s": 40.44,
+   "rtf": 0.348,
+   "effective_hz": 30.0,
+   "command_hz": 30.0,
+   "command_hz_wall": 10.44,
+   "policy_calls": 127,
+   "latency_ms_mean": 102.02,
+   "latency_ms_max": 163.68,
+   "ready_frac": 1.0,
+   "policy_hz_rt": 93.62,
+   "safety": {
+    "steps": 1213,
+    "clipped_steps": 0,
+    "mode": "ok",
+    "counts": {}
+   },
+   "success": null,
+   "task": "sort_fixed",
+   "variant": "nominal",
+   "layout": [
+    {
+     "color": "blue",
+     "x": 0.505,
+     "y": 0.173,
+     "yaw": 0.35,
+     "shape": "cube"
+    },
+    {
+     "color": "red",
+     "x": 0.396,
+     "y": 0.162,
+     "yaw": 0.739,
+     "shape": "cube"
+    },
+    {
+     "color": "yellow",
+     "x": 0.317,
+     "y": 0.188,
+     "yaw": 0.332,
+     "shape": "cylinder"
+    }
+   ],
+   "mapping": {
+    "red": "left",
+    "yellow": "center",
+    "blue": "right"
+   },
+   "outcomes": [
+    {
+     "name": "obj_red_cube_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_blue_cube_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "outcome": "correct"
+    }
+   ],
+   "score": 3,
+   "max_score": 3,
+   "n_objects": 3,
+   "n_correct": 3,
+   "all_correct": true,
+   "settle_s": 0.01,
+   "episode_wall_s": 116.2,
+   "home_err": 0.012,
+   "final_objects": [
+    {
+     "name": "obj_red_cube_0",
+     "pos": [
+      0.46206,
+      0.22257,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_blue_cube_0",
+     "pos": [
+      0.45029,
+      -0.22957,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "pos": [
+      0.43017,
+      -0.01111,
+      0.0355
+     ],
+     "speed": 0.0
+    }
+   ],
+   "dr_params": null,
+   "gate_ok": true,
+   "gate_why": []
+  },
+  {
+   "episode": 4,
+   "seed": 1004,
+   "instruction": "Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.",
+   "end_reason": "done",
+   "ticks": 3447,
+   "hold_ticks": 0,
+   "wait_ticks": 0,
+   "wall_s": 331.177,
+   "clock": "sim",
+   "sim_s": 114.9,
+   "rtf": 0.347,
+   "effective_hz": 30.0,
+   "command_hz": 30.0,
+   "command_hz_wall": 10.41,
+   "policy_calls": 357,
+   "latency_ms_mean": 97.38,
+   "latency_ms_max": 210.41,
+   "ready_frac": 1.0,
+   "policy_hz_rt": 99.15,
+   "safety": {
+    "steps": 3447,
+    "clipped_steps": 0,
+    "mode": "ok",
+    "counts": {}
+   },
+   "success": null,
+   "task": "sort_fixed",
+   "variant": "nominal",
+   "layout": [
+    {
+     "color": "red",
+     "x": 0.341,
+     "y": 0.181,
+     "yaw": -0.367,
+     "shape": "cube"
+    },
+    {
+     "color": "yellow",
+     "x": 0.401,
+     "y": 0.122,
+     "yaw": 0.056,
+     "shape": "cylinder"
+    },
+    {
+     "color": "yellow",
+     "x": 0.6,
+     "y": 0.187,
+     "yaw": -0.332,
+     "shape": "cylinder"
+    },
+    {
+     "color": "blue",
+     "x": 0.539,
+     "y": 0.127,
+     "yaw": -0.68,
+     "shape": "triangle"
+    },
+    {
+     "color": "red",
+     "x": 0.471,
+     "y": 0.181,
+     "yaw": 0.265,
+     "shape": "cylinder"
+    }
+   ],
+   "mapping": {
+    "red": "left",
+    "yellow": "center",
+    "blue": "right"
+   },
+   "outcomes": [
+    {
+     "name": "obj_red_cube_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_red_cylinder_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_yellow_cylinder_1",
+     "outcome": "correct"
+    },
+    {
+     "name": "obj_blue_triangle_0",
+     "outcome": "counter"
+    }
+   ],
+   "score": 4,
+   "max_score": 5,
+   "n_objects": 5,
+   "n_correct": 4,
+   "all_correct": false,
+   "settle_s": 0.01,
+   "episode_wall_s": 331.3,
+   "home_err": 0.012,
+   "final_objects": [
+    {
+     "name": "obj_red_cube_0",
+     "pos": [
+      0.44964,
+      0.25293,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_red_cylinder_0",
+     "pos": [
+      0.43638,
+      0.19985,
+      0.0355
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_cylinder_0",
+     "pos": [
+      0.45832,
+      -0.01062,
+      0.03464
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_yellow_cylinder_1",
+     "pos": [
+      0.43206,
+      0.0709,
+      0.03537
+     ],
+     "speed": 0.0
+    },
+    {
+     "name": "obj_blue_triangle_0",
+     "pos": [
+      0.26497,
+      0.09458,
+      0.03226
+     ],
+     "speed": 0.0
+    }
+   ],
+   "dr_params": null,
+   "gate_ok": true,
+   "gate_why": []
+  }
+ ]
+}

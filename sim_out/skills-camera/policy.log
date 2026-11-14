@@ -1,0 +1,46 @@
+2026-11-14 12:38:06,372 agent INFO skills/camera/rule ready in 0.2 s
+2026-11-14 12:38:06,473 aaltonomous.policy_server INFO policy server 'skills/camera/rule' listening on 0.0.0.0:8000
+2026-11-14 12:39:01,371 websockets.server INFO connection open
+2026-11-14 12:39:03,450 agent INFO reset task=sort_fixed seed=1000 mapping={'red': 'left', 'yellow': 'center', 'blue': 'right'}
+2026-11-14 12:39:05,926 agent INFO [skills t=  0.70] execute pick_and_place red_1 -> left (left arm, 7.5 s)
+2026-11-14 12:39:32,408 agent INFO [skills t=  8.74] execute pick_and_place yellow_1 -> center (right arm, 9.3 s)
+2026-11-14 12:40:07,586 agent INFO [skills t= 18.57] execute pick_and_place blue_1 -> right (right arm, 9.4 s)
+2026-11-14 12:40:39,251 agent INFO [skills t= 28.47] nothing left to sort (0 objects seen)
+2026-11-14 12:40:46,141 agent INFO episode end: 3 skills executed: [('red_1', 'left', 'left'), ('yellow_1', 'center', 'right'), ('blue_1', 'right', 'right')]
+2026-11-14 12:40:46,141 agent INFO reset task=sort_fixed seed=1001 mapping={'red': 'left', 'yellow': 'center', 'blue': 'right'}
+2026-11-14 12:40:48,608 agent INFO [skills t=  0.67] execute pick_and_place yellow_1 -> center (left arm, 10.0 s)
+2026-11-14 12:41:22,819 agent INFO [skills t= 11.20] execute pick_and_place blue_2 -> right (right arm, 8.9 s)
+2026-11-14 12:41:54,173 agent INFO [skills t= 20.64] execute pick_and_place red_1 -> left (left arm, 10.0 s)
+2026-11-14 12:42:28,192 agent INFO [skills t= 31.10] execute pick_and_place blue_2 -> right (right arm, 9.4 s)
+2026-11-14 12:43:02,470 agent INFO [skills t= 41.40] execute pick_and_place red_1 -> left (left arm, 9.1 s)
+2026-11-14 12:43:38,119 agent INFO [skills t= 51.44] execute pick_and_place blue_1 -> right (right arm, 10.0 s)
+2026-11-14 12:44:13,522 agent INFO [skills t= 62.10] execute pick_and_place red_1 -> left (left arm, 9.4 s)
+2026-11-14 12:44:47,003 agent INFO [skills t= 72.37] execute pick_and_place red_1 -> left (left arm, 10.1 s)
+2026-11-14 12:45:21,243 agent INFO [skills t= 82.94] nothing left to sort (1 objects seen)
+2026-11-14 12:45:27,940 agent INFO episode end: 8 skills executed: [('yellow_1', 'center', 'left'), ('blue_2', 'right', 'right'), ('red_1', 'left', 'left'), ('blue_2', 'right', 'right'), ('red_1', 'left', 'left'), ('blue_1', 'right', 'right'), ('red_1', 'left', 'left'), ('red_1', 'left', 'left')]
+2026-11-14 12:45:27,941 agent INFO reset task=sort_fixed seed=1002 mapping={'red': 'left', 'yellow': 'center', 'blue': 'right'}
+2026-11-14 12:45:30,134 agent INFO [skills t=  0.67] execute pick_and_place blue_2 -> right (right arm, 7.9 s)
+2026-11-14 12:45:58,029 agent INFO [skills t=  9.07] execute pick_and_place yellow_1 -> center (left arm, 9.2 s)
+2026-11-14 12:46:30,150 agent INFO [skills t= 18.80] execute pick_and_place blue_1 -> right (right arm, 9.2 s)
+2026-11-14 12:47:03,005 agent INFO [skills t= 28.87] execute pick_and_place red_1 -> left (left arm, 10.1 s)
+2026-11-14 12:47:40,942 agent INFO [skills t= 39.90] execute pick_and_place red_1 -> left (left arm, 9.3 s)
+2026-11-14 12:48:13,606 agent INFO [skills t= 49.70] nothing left to sort (0 objects seen)
+2026-11-14 12:48:20,485 agent INFO episode end: 5 skills executed: [('blue_2', 'right', 'right'), ('yellow_1', 'center', 'left'), ('blue_1', 'right', 'right'), ('red_1', 'left', 'left'), ('red_1', 'left', 'left')]
+2026-11-14 12:48:20,486 agent INFO reset task=sort_fixed seed=1003 mapping={'red': 'left', 'yellow': 'center', 'blue': 'right'}
+2026-11-14 12:48:22,857 agent INFO [skills t=  0.67] execute pick_and_place yellow_1 -> center (right arm, 8.4 s)
+2026-11-14 12:48:53,813 agent INFO [skills t=  9.94] execute pick_and_place yellow_1 -> center (right arm, 9.3 s)
+2026-11-14 12:49:25,087 agent INFO [skills t= 19.70] execute pick_and_place yellow_1 -> center (right arm, 11.4 s)
+2026-11-14 12:50:03,721 agent INFO [skills t= 31.60] execute pick_and_place blue_1 -> right (right arm, 9.7 s)
+2026-11-14 12:50:39,471 agent INFO [skills t= 42.24] execute pick_and_place red_1 -> left (left arm, 9.4 s)
+2026-11-14 12:51:13,571 agent INFO [skills t= 52.14] nothing left to sort (1 objects seen)
+2026-11-14 12:51:20,348 agent INFO episode end: 5 skills executed: [('yellow_1', 'center', 'right'), ('yellow_1', 'center', 'right'), ('yellow_1', 'center', 'right'), ('blue_1', 'right', 'right'), ('red_1', 'left', 'left')]
+2026-11-14 12:51:20,349 agent INFO reset task=sort_fixed seed=1004 mapping={'red': 'left', 'yellow': 'center', 'blue': 'right'}
+2026-11-14 12:51:24,465 agent INFO [skills t=  1.27] execute pick_and_place yellow_1 -> center (left arm, 9.1 s)
+2026-11-14 12:51:55,112 agent INFO [skills t= 10.90] execute pick_and_place yellow_1 -> center (left arm, 8.5 s)
+2026-11-14 12:52:23,331 agent INFO [skills t= 19.90] execute pick_and_place yellow_1 -> center (right arm, 10.1 s)
+2026-11-14 12:52:57,462 agent INFO [skills t= 30.54] execute pick_and_place yellow_1 -> center (right arm, 10.6 s)
+2026-11-14 12:53:33,332 agent INFO [skills t= 41.67] execute pick_and_place red_1 -> left (left arm, 9.0 s)
+2026-11-14 12:54:04,288 agent INFO [skills t= 51.14] execute pick_and_place red_1 -> left (left arm, 10.4 s)
+2026-11-14 12:54:40,612 agent INFO [skills t= 62.24] execute pick_and_place blue_1 -> right (right arm, 9.6 s)
+2026-11-14 12:55:14,035 agent INFO [skills t= 72.74] execute pick_and_place blue_1 -> right (right arm, 9.5 s)
+2026-11-14 12:55:46,761 agent INFO [skills t= 82.74] nothing left to sort (2 objects seen)

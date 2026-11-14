@@ -1,0 +1,21 @@
+2026-11-14 11:31:35,481 aaltonomous.policy_server INFO policy server 'chunk-vla/pi05' listening on 0.0.0.0:8000
+2026-11-14 11:31:35,482 websockets.server INFO server listening on 0.0.0.0:8000
+The PI05 model is a direct port of the OpenPI implementation. 
+This implementation follows the original OpenPI structure for compatibility. 
+Original implementation: https://github.com/Physical-Intelligence/openpi
+2026-11-14 11:33:21,293 root INFO Enabled gradient checkpointing for PI05Pytorch model
+Loading model from: /runs/pi05-sim-v2-full/checkpoints/001000/pretrained_model
+✓ Loaded state dict from model.safetensors
+2026-11-14 11:33:25,789 root WARNING Vision embedding key might need handling: model.paligemma_with_expert.paligemma.model.vision_tower.embeddings.patch_embedding.bias
+2026-11-14 11:33:25,789 root WARNING Vision embedding key might need handling: model.paligemma_with_expert.paligemma.model.vision_tower.embeddings.patch_embedding.weight
+All keys loaded successfully!
+2026-11-14 11:33:32,411 submission INFO loaded /runs/pi05-sim-v2-full/checkpoints/001000/pretrained_model on cuda in 107.3 s; cameras ['cam_high<-head_rgb', 'cam_left_wrist<-left_wrist_rgb', 'cam_right_wrist<-right_wrist_rgb']; chunk 50
+2026-11-14 11:33:33,377 submission INFO warm-up inference 0.79 s, then 0.179 s per chunk
+2026-11-14 11:33:33,377 submission INFO model ready 119.3 s after start: pi05 (NVIDIA L40S, torch 2.15.0+cu132, cuda 13.2)
+2026-11-14 11:33:36,315 websockets.server INFO connection open
+2026-11-14 11:33:37,879 submission INFO reset: task=sort_fixed instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 11:39:28,430 submission INFO episode end: 3600 ticks, 112 chunks, 24 hold ticks, 1577 ticks shaped by the safety layer, inference 188 ms median; shaped by: {'arm_velocity': 1472, 'hand_velocity': 95, 'arm_position': 65}
+2026-11-14 11:39:28,430 submission INFO reset: task=sort_fixed instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 11:45:21,319 submission INFO episode end: 3608 ticks, 113 chunks, 24 hold ticks, 1655 ticks shaped by the safety layer, inference 186 ms median; shaped by: {'arm_velocity': 1574, 'hand_velocity': 95, 'arm_position': 5}
+2026-11-14 11:45:21,319 submission INFO reset: task=sort_fixed instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 11:51:01,648 websockets.server INFO connection closed

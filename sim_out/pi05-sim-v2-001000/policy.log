@@ -1,0 +1,17 @@
+2026-11-14 09:40:45,168 aaltonomous.policy_server INFO policy server 'chunk-vla/pi05' listening on 0.0.0.0:8000
+2026-11-14 09:40:45,168 websockets.server INFO server listening on 0.0.0.0:8000
+The PI05 model is a direct port of the OpenPI implementation. 
+This implementation follows the original OpenPI structure for compatibility. 
+Original implementation: https://github.com/Physical-Intelligence/openpi
+Loading model from: /runs/pi05-sim-v2/checkpoints/001000/pretrained_model
+✓ Loaded state dict from model.safetensors
+2026-11-14 09:42:37,902 root WARNING Vision embedding key might need handling: model.paligemma_with_expert.paligemma.model.vision_tower.embeddings.patch_embedding.bias
+2026-11-14 09:42:37,904 root WARNING Vision embedding key might need handling: model.paligemma_with_expert.paligemma.model.vision_tower.embeddings.patch_embedding.weight
+All keys loaded successfully!
+2026-11-14 09:42:54,825 submission INFO loaded /runs/pi05-sim-v2/checkpoints/001000/pretrained_model on cuda in 119.9 s; cameras ['cam_high<-head_rgb', 'cam_left_wrist<-left_wrist_rgb', 'cam_right_wrist<-right_wrist_rgb']; chunk 50
+2026-11-14 09:42:55,881 submission INFO warm-up inference 0.86 s, then 0.192 s per chunk
+2026-11-14 09:42:55,881 submission INFO model ready 132.1 s after start: pi05 (NVIDIA L40S, torch 2.15.0+cu132, cuda 13.2)
+2026-11-14 09:42:58,649 websockets.server INFO connection open
+2026-11-14 09:43:00,278 submission INFO reset: task=sort_fixed instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'
+2026-11-14 09:48:40,346 submission INFO episode end: 3600 ticks, 112 chunks, 24 hold ticks, 1830 ticks shaped by the safety layer, inference 195 ms median; shaped by: {'arm_velocity': 1658, 'hand_velocity': 80, 'arm_position': 157}
+2026-11-14 09:48:40,346 submission INFO reset: task=sort_fixed instruction='Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.'

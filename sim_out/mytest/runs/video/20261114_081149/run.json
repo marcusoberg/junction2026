@@ -1,0 +1,16 @@
+{
+ "team": "video",
+ "backend": "sim",
+ "task": "sort_fixed",
+ "seed": 0,
+ "episodes": 1,
+ "time_limit": 45.0,
+ "max_policy_latency_s": 30.0,
+ "policy": "ws://localhost:8000",
+ "policy_metadata": {
+  "type": "metadata",
+  "version": 1,
+  "name": "chunk-vla/pi05",
+  "action_horizon": 8
+ }
+}
