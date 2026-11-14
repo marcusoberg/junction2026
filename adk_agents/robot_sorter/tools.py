@@ -306,23 +306,29 @@ def _plan_grasp(robot, obj, arm, call, info):
         traj = call(arm)
         info["grip"] = ("flat faces" if traj.reason.startswith("face-aligned") else "plain pinch") if traj.ok else None
         return traj
-    grip = TRIANGLE_GRIPS_DEG[robot.tries.get(obj.id, 0) % len(TRIANGLE_GRIPS_DEG)]
-    info.update(grip="flat faces of the triangle", finger_to_apex_deg=grip)
+    # Start with the grip angle this object has not missed with yet; if no flat-face grip can be planned at that
+    # angle from either arm, go on to the next angle (grasp bench gb2: "no plan" at 105 deg was returned without
+    # trying 90 or 75, which do plan and hold).
+    n = len(TRIANGLE_GRIPS_DEG)
+    order = [TRIANGLE_GRIPS_DEG[(robot.tries.get(obj.id, 0) + k) % n] for k in range(n)]
+    why = ""
     with robot.ctx.lock:
         saved = oracle.FACE_ALIGN["triangle"]
-        oracle.FACE_ALIGN["triangle"] = (np.pi / 2 + np.radians(grip), 3)
         try:
-            first = call(arm)
-            if first.ok and first.reason.startswith("face-aligned"):
-                return first
-            if arm is None and first.ok and first.side:
-                other = call("right" if first.side == "left" else "left")
-                if other.ok and other.reason.startswith("face-aligned"):
-                    return other
-            why = first.reason if not first.ok else ("only the plain pinch can be planned from here, and it does "
-                                                     "not hold a triangular prism")
+            for grip in order:
+                oracle.FACE_ALIGN["triangle"] = (np.pi / 2 + np.radians(grip), 3)
+                info.update(grip="flat faces of the triangle", finger_to_apex_deg=grip)
+                first = call(arm)
+                if first.ok and first.reason.startswith("face-aligned"):
+                    return first
+                if arm is None and first.ok and first.side:
+                    other = call("right" if first.side == "left" else "left")
+                    if other.ok and other.reason.startswith("face-aligned"):
+                        return other
+                why = why or (first.reason if not first.ok else "only the plain pinch can be planned from here, "
+                              "and it does not hold a triangular prism")
             return Trajectory(False, first.skill, first.args, side=first.side,
-                              reason=f"no grip on the triangle's flat faces ({grip:.0f} deg): {why}")
+                              reason=f"no grip on the triangle's flat faces at {', '.join(f'{g:.0f}' for g in order)} deg: {why}")
         finally:
             oracle.FACE_ALIGN["triangle"] = saved
 
