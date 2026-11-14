@@ -45,7 +45,12 @@ SAME_OBJECT_M = 0.04          # a detection this close to a known object is that
 # closed position: in the Isaac sim they stay 0.017-0.07 rad short, and 0.000 when the hand closed on nothing
 # (a first threshold of 0.025 wrongly dropped held objects in run adk-2-lang).
 GRASP_CHECK = os.environ.get("ROBOT_GRASP_CHECK", "1") == "1"
-GRASP_ERR_RAD = float(os.environ.get("ROBOT_GRASP_ERR_RAD", "0.010"))
+GRASP_ERR_RAD = float(os.environ.get("ROBOT_GRASP_ERR_RAD", "0.015"))
+# (our teammates measured the same on 147 picks: held 0.021-0.100 rad, empty 0.000-0.010; bot-icelli decision_oracle)
+# Triangular prisms: the plain pinch holds them in about 1 pick of 15 (same source) and can tip them over, so they
+# are only ever gripped on their flat faces. The angle between the fingers and the apex direction is tried in this
+# order, moving on after each miss on the same object.
+TRIANGLE_GRIPS_DEG = (105.0, 90.0, 75.0)
 
 
 # Two arms in one workspace: a planned move is refused if the moving arm would come this close to the other arm
@@ -142,10 +147,19 @@ def _detect(robot):
     """Objects on the counter -> JSON for the model; remembered in robot.objects so tools can take their ids.
     An object keeps its id from one look to the next (same place), so ids stay valid across moves."""
     from agent.skills.perception import detect_camera, xyz_to_point
+    from .shape import classify_top, top_face_points
     ctx, obs = robot.ctx, robot.obs
     # The ONLY source of object positions: the head camera's colour and depth images in `obs`. Nothing here (or
     # anywhere in this package) asks the simulator where an object is.
-    found = detect_camera(ctx, obs, shapes=os.environ.get("ROBOT_SHAPES", "1") == "1")
+    found = detect_camera(ctx, obs, shapes=False)
+    for o in found:              # shape and rotation from the outline of the top face in the depth image
+        try:
+            shape, yaw, _, _ = classify_top(top_face_points(ctx, obs, o.xyz))
+        except Exception:  # noqa: BLE001
+            shape, yaw = None, None
+        o.extra["shape_seen"] = shape
+        o.shape = shape if shape in ("cube", "cylinder", "triangle") else None
+        o.yaw = yaw if o.shape in ("cube", "triangle") else None
     found.sort(key=lambda o: -o.extra.get("n_px", 0))                    # one object matched by two masks is seen
     found = [o for i, o in enumerate(found)                               # twice: keep the larger blob
              if all(np.linalg.norm(o.xyz[:2] - p.xyz[:2]) > 0.03 for p in found[:i])]
@@ -167,12 +181,17 @@ def _detect(robot):
     for o in found:
         y, x = xyz_to_point(ctx, o.xyz, hw)
         u, v = (int(round(c)) for c in o.extra.get("uv", (x / 1000 * (hw[1] - 1), y / 1000 * (hw[0] - 1))))
-        patch = rgb[max(0, v - 4):v + 5, max(0, u - 4):u + 5].reshape(-1, 3)
+        # colour of the object, not of the glare on its top face: the most saturated third of a patch that also
+        # covers the front face (the lit top face is washed out and made orange read as yellow)
+        patch = rgb[max(0, v - 10):v + 22, max(0, u - 12):u + 13].reshape(-1, 3).astype(float)
+        if len(patch):
+            sat = (patch.max(1) - patch.min(1)) / np.maximum(patch.max(1), 1.0)
+            patch = patch[sat >= np.percentile(sat, 67)]
         out.append({"id": o.id, "side": "left" if o.xyz[1] > 0 else "right",
                     "position_m": [round(float(o.xyz[0]), 3), round(float(o.xyz[1]), 3)],
                     "point": [int(round(y)), int(round(x))],
                     "rgb": [int(c) for c in np.median(patch, axis=0)] if len(patch) else None,
-                    "shape_guess": o.shape,
+                    "shape_guess": "lying on its side" if o.extra.get("shape_seen") == "tipped" else o.shape,
                     "yaw_deg_guess": None if o.yaw is None else round(float(np.degrees(o.yaw)), 1)})
     robot.trace.frame_dump(obs, robot.t, out)
     return out
@@ -203,9 +222,42 @@ def _target(robot, object_id, point, shape, yaw_deg):
     else:
         raise ToolError("say which object: object_id (from look) or point ([y, x] on the head camera image)")
     yaw = np.radians(yaw_deg) if yaw_deg is not None and shape in ("cube", "triangle") else None
-    if yaw is None and shape == "triangle" and object_id and seen.shape == "triangle" and seen.yaw is not None:
-        yaw = float(seen.yaw)      # a triangular prism needs the hand turned to its faces: use the measured rotation
+    if yaw is None and object_id and seen.shape in ("cube", "triangle") and seen.yaw is not None \
+            and shape in (None, seen.shape):
+        # The hand has to be turned to the object's flat faces (a must for triangular prisms): use the shape and
+        # rotation measured from the depth image, unless the model says it is something else.
+        shape, yaw = seen.shape, float(seen.yaw)
     return WorldObject(object_id or "pointed", color, xyz, shape if yaw is not None else None, yaw, source=source)
+
+
+def _plan_grasp(robot, obj, arm, call, info):
+    """call(arm) -> Trajectory, for a skill that starts with a grasp. Triangular prisms get a grip on their flat
+    faces from whichever arm can do it, or no plan at all; everything else is planned as the oracle does."""
+    from agent.skills.motion import Trajectory
+    import aaltonomous.sim.oracle as oracle
+    if obj.shape != "triangle":
+        traj = call(arm)
+        info["grip"] = ("flat faces" if traj.reason.startswith("face-aligned") else "plain pinch") if traj.ok else None
+        return traj
+    grip = TRIANGLE_GRIPS_DEG[robot.tries.get(obj.id, 0) % len(TRIANGLE_GRIPS_DEG)]
+    info.update(grip="flat faces of the triangle", finger_to_apex_deg=grip)
+    with robot.ctx.lock:
+        saved = oracle.FACE_ALIGN["triangle"]
+        oracle.FACE_ALIGN["triangle"] = (np.pi / 2 + np.radians(grip), 3)
+        try:
+            first = call(arm)
+            if first.ok and first.reason.startswith("face-aligned"):
+                return first
+            if arm is None and first.ok and first.side:
+                other = call("right" if first.side == "left" else "left")
+                if other.ok and other.reason.startswith("face-aligned"):
+                    return other
+            why = first.reason if not first.ok else ("only the plain pinch can be planned from here, and it does "
+                                                     "not hold a triangular prism")
+            return Trajectory(False, first.skill, first.args, side=first.side,
+                              reason=f"no grip on the triangle's flat faces ({grip:.0f} deg): {why}")
+        finally:
+            oracle.FACE_ALIGN["triangle"] = saved
 
 
 def _approach(finger_direction_deg=None, xy_offset_m=None, speed=None):
@@ -351,6 +403,7 @@ async def _grasp_move(label, plan, on_done, obj, look_after, **echo):
             back = robot.command_state()
             await _run(robot, await asyncio.to_thread(recover, robot.ctx, *back), f"{label}: missed, back home", back, settle=False)
             robot.holding = robot.held_id = None
+            robot.tries[obj.id] = robot.tries.get(obj.id, 0) + 1      # the next attempt on it uses another grip
             await _park(robot)
             out = _result("missed", reason="the hand closed on nothing (finger sensors): the object is still on the "
                           "counter. The arm is back home.", grasp_check=check, arm=traj.side, **echo)
@@ -385,16 +438,19 @@ async def _grasp_move(label, plan, on_done, obj, look_after, **echo):
 async def _do_pick_and_place(robot, obj, bin_name, arm=None, approach=None, drop=None, **echo):
     drop = _drop_point(robot, bin_name, drop)
 
+    info = {}
+
     def plan(ctx, arm_q, hand_q):
         from agent.skills import pick_and_place as skill
-        return skill(ctx, obj, bin_name, arm_q, hand_q, arm=arm, approach=approach, drop_offset=drop)
+        return _plan_grasp(robot, obj, arm, lambda a: skill(ctx, obj, bin_name, arm_q, hand_q, arm=a,
+                                                             approach=approach, drop_offset=drop), info)
 
     def placed(traj):
         robot.holding = robot.held_id = None
         robot.placed[bin_name] = robot.placed.get(bin_name, 0) + 1
 
     return await _grasp_move(f"pick_and_place {obj.id} -> {bin_name}", plan, placed, obj, True, object=obj.id,
-                             bin=bin_name, grasp_at_m=[round(float(v), 3) for v in obj.xyz], **echo)
+                             bin=bin_name, grasp_at_m=[round(float(v), 3) for v in obj.xyz], grasp=info, **echo)
 
 
 async def _do_hand_over(robot, obj, bin_name):
@@ -424,7 +480,7 @@ async def look() -> dict:
 
     Returns:
       objects_on_counter: one entry per object: id (says nothing about colour or shape), rgb (the colour the
-        camera measured at its top face, 0-255: compare objects with each other, e.g. orange has much less green
+        camera measured on the object, 0-255: compare objects with each other, e.g. orange has much less green
         than yellow), side of the robot it lies on, position_m [x forward, y left] in metres from the robot's
         pelvis, point [y, x] in the head image (0..1000), and a rough guess of shape and rotation (often wrong:
         trust the image over it). Your next live view shows the head image with every id drawn on its object:
@@ -529,8 +585,8 @@ async def pick_and_place(
       point: [y, x] of the object in the HEAD camera image, each 0..1000; point at the middle of its top face.
       arm: Which arm to use. Leave out to let the planner choose. The left bin can only be reached by the left
         arm and the right bin only by the right arm.
-      shape: The object's shape, if you can see it. Always pass "triangle" for a triangular prism: the hand is
-        then turned to grip its flat faces (with yaw_deg if you give it, else the rotation the camera measured).
+      shape: Leave out normally: the tool measures shape and rotation from the depth image and turns the hand to
+        the flat faces of cubes and triangular prisms by itself. Pass it only to overrule a wrong shape_guess.
       yaw_deg: Rotation of the object about the vertical axis in degrees (0 = an edge pointing away from the
         robot). Only used with shape cube or triangle.
       finger_direction_deg: Where the fingers point: 0 = away from the robot, +90 = to its left.
@@ -588,15 +644,18 @@ async def pick(
     obj = _target(robot, object_id, point, shape, yaw_deg)
     approach = _approach(finger_direction_deg, xy_offset_m)
 
+    info = {}
+
     def plan(ctx, arm_q, hand_q):
         from agent.skills import pick as skill
-        return skill(ctx, obj, arm_q, hand_q, arm=arm, approach=approach, for_bin=for_bin)
+        return _plan_grasp(robot, obj, arm, lambda a: skill(ctx, obj, arm_q, hand_q, arm=a, approach=approach,
+                                                             for_bin=for_bin), info)
 
     def picked(traj):
         robot.holding, robot.held_id = traj.side, object_id
 
     return await _grasp_move(f"pick {obj.id}", plan, picked, obj, False, object=obj.id,
-                             grasp_at_m=[round(float(v), 3) for v in obj.xyz])
+                             grasp_at_m=[round(float(v), 3) for v in obj.xyz], grasp=info)
 
 
 @_tool

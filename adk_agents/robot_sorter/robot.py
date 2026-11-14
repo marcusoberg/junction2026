@@ -94,7 +94,8 @@ class Robot:
             self.holding = None                # "left" | "right" | None
             self.held_id = None                # id of the object in that hand, if it came from a look
             self.objects = {}                  # id -> WorldObject, from the last look
-            self.id_count = {}                 # colour -> ids handed out, so an id is never reused in an episode
+            self.id_count = {}                 # ids handed out, so an id is never reused in an episode
+            self.tries = {}                    # object id -> grasps that missed (the next one uses another grip)
             self.placed = {}                   # bin -> objects we dropped in it (spreads the drop points)
             self.view_requests = []            # camera views the agent asked for; shown with the next model call
             self.finished = False              # the agent called done

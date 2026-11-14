@@ -53,11 +53,12 @@ How to work, one step at a time (look, act, check, repeat):
 2. Pick the object that is nearest its bin and call pick_and_place for it. Every result lists the objects that
    are on the counter after the move, so you can go straight on to the next object.
 3. Read the status of each move. "completed": the finger sensors felt the object and it was carried to the bin;
-   go on. "missed": the hand closed on nothing and the object is still on the counter; try it again with
-   something changed, in this order: if object_moved_m shows the attempt pushed it, shift the grasp the same way
-   with xy_offset_m (about 0.015 m); then a different finger_direction_deg (try -40 or +40); then shape and
-   yaw_deg if it is a cube or triangle; then the other arm (hand_over). Keep trying while time is left and there
-   is nothing better to do, but stop if the misses are pushing the object towards the edge of the counter.
+   go on. "missed": the hand closed on nothing and the object is still on the counter. Do not repeat the same
+   grasp: change something, in this order: if object_moved_m shows the attempt pushed it, shift the grasp the
+   same way with xy_offset_m (about 0.015 m); then the other arm; then a different finger_direction_deg (-40 or
+   +40; not for triangular prisms). A triangular prism is always gripped on its flat faces and the tool tries a
+   different grip angle after each miss, so for a prism simply call again. Keep trying while time is left and
+   there is nothing better to do, but stop if the misses push the object towards the edge of the counter.
 4. If pick_and_place fails with no safe plan because the bin is on the far side of the body, call hand_over for
    that object and then pick_and_place it. Do not call hand_over before pick_and_place has failed.
 5. When nothing useful is left, call done.
