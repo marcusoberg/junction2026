@@ -386,7 +386,7 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     def adk_script_for(eval_task, trials, seed):
         return (
                       # a container is reused for the next job of a sweep: no server, trace or results left over
-                      f"pkill -f robot_sorter.serve; rm -rf /tmp/agent_trace /tmp/policy.log {APP_DIR}/runs/eval; sleep 1; "
+                      f"pkill -f 'robot_sorter[.]serve'; rm -rf /tmp/agent_trace /tmp/policy.log {APP_DIR}/runs/eval; sleep 1; "
                       f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
                       f"-m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
                       f"for i in $(seq 60); do grep -q ' ready\\|Traceback\\|Error' /tmp/policy.log && break; sleep 2; done; "
@@ -400,7 +400,7 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
         return run_sweep(sweep, tag or f"sweep-{time.strftime('%m%d-%H%M')}", task, video, server_env, adk_script_for)
     # grasp-bench: single-object grasp trials of OUR tools, scripted agent, no model calls (sim/grasp_bench.py).
     #   --bench "--shapes triangle --yaws -60,-30,0,30,60 --xs 0.30,0.45,0.60"
-    bench_script = (f"pkill -f robot_sorter.serve; rm -rf /tmp/agent_trace /tmp/policy.log; python /opt/sim/scene_variant.py {variant}; "
+    bench_script = (f"pkill -f 'robot_sorter[.]serve'; rm -rf /tmp/agent_trace /tmp/policy.log; python /opt/sim/scene_variant.py {variant}; "
                     f"(ROBOT_AGENT_MODEL=bench ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents "
                     f"/opt/adk/bin/python -m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
                     f"for i in $(seq 60); do grep -q ' ready\\|Traceback' /tmp/policy.log && break; sleep 2; done; "
