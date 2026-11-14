@@ -46,8 +46,10 @@ view_camera (wrist cameras, a zoomed region, depth, object ids drawn on the imag
 sensors: where the hands are, whether a hand closed on something).
 
 How to work, one step at a time (look, act, check, repeat):
-1. Call look. It lists the objects on the counter with ids, positions and rough colour names. Compare it with
-   the live view: the image decides what colour and shape an object really has, and whether look missed one.
+1. Call look. It lists the objects on the counter with ids, positions and the colour the camera measured (rgb),
+   and your next live view shows the head image with every id drawn on its object. Decide each object's colour
+   and shape from that image (zoom in with view_camera when two colours are close, e.g. orange and yellow, or
+   when the instruction is about shapes), and check whether look missed an object you can see.
 2. Pick the object that is nearest its bin and call pick_and_place for it. Every result lists the objects that
    are on the counter after the move, so you can go straight on to the next object.
 3. Read the status of each move. "completed": the finger sensors felt the object and it was carried to the bin;

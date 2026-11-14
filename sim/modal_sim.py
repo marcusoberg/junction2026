@@ -150,7 +150,7 @@ def prepare_container():
 def collect(tag):
     dst = Path("/out") / tag
     dst.mkdir(parents=True, exist_ok=True)
-    for src in ("/tmp/aalto_sim.log", "/tmp/policy.log", "/tmp/aalto_snap", f"{APP_DIR}/runs"):
+    for src in ("/tmp/aalto_sim.log", "/tmp/policy.log", "/tmp/aalto_snap", "/tmp/agent_trace", f"{APP_DIR}/runs"):
         if Path(src).exists():
             subprocess.run(["cp", "-a", src, str(dst)], check=False)
     kit_vol.commit()
@@ -319,7 +319,7 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     adk_script = ("/usr/local/bin/python -m venv /opt/adk && /opt/adk/bin/pip install -q google-adk==2.14.1 numpy==2.2.6 "
                   "scipy==1.15.2 opencv-python-headless==4.10.0.84 pyyaml msgpack 'websockets>=12' pin==3.3.1 "
                   "2>&1 | tail -2; "
-                  f"({server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
+                  f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
                   f"-m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
                   f"for i in $(seq 60); do grep -q ' ready\\|Traceback\\|Error' /tmp/policy.log && break; sleep 2; done; "
                   f"grep ' ready\\|Traceback\\|Error' /tmp/policy.log | tail -5; "

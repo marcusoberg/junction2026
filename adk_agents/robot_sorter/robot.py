@@ -36,6 +36,7 @@ class Robot:
         self.warmup_ticks = 15                 # the sim's first frames after a reset still show the previous scene
         self.default_time_limit = float(os.environ.get("AALTO_TIME_LIMIT", 120.0))
         self.log = lambda msg: print(msg, flush=True)
+        self.trace = Trace()
         self.motion = None
         self.reset()
 
@@ -54,6 +55,7 @@ class Robot:
                         "orange": [[[9, 70, 70], [17, 255, 255]]], "green": [[[36, 70, 60], [85, 255, 255]]],
                         "cyan": [[[86, 70, 60], [99, 255, 255]]], "purple": [[[131, 60, 50], [155, 255, 255]]],
                         "pink": [[[156, 70, 70], [169, 255, 255]]]})
+                    self._ctx.camera = _any_colour_camera(self._ctx)
                 self.aside = self._aside_pose(self._ctx)
             return self._ctx
 
@@ -158,6 +160,7 @@ class Robot:
     def _finish(self, outcome):
         m, self.motion = self.motion, None
         self.moves.append({"t": round(m["t"], 2), "move": m["label"], "arm": m["arm"], "outcome": outcome})
+        self.trace.write("motion", t=round(m["t"], 2), t_end=round(self.t, 2), move=m["label"], arm=m["arm"], outcome=outcome)
         self.log(f"[robot t={self.t:6.2f}] {m['label']}: {outcome}")
         if not m["future"].done():
             m["future"].set_result(outcome)
@@ -225,6 +228,71 @@ class MockWorld:
                     self.robot.log(f"[mock] episode ended: {info['end_reason']}; starting another")
                     break
             self.seed += 1
+
+
+def _any_colour_camera(ctx):
+    """The organisers' detector with one more mask: every pixel that none of the hue ranges claims. The detector
+    itself keeps only pixels whose depth puts them at object height above the counter and outside the bins, so
+    this adds objects of ANY colour, including washed-out, white, grey or black ones, found by their geometry."""
+    import cv2
+    from aaltonomous.baselines.classical.perception import Perception
+
+    class AnyColour(Perception):
+        def masks(self, rgb):
+            out = super().masks(rgb)
+            claimed = np.zeros(np.asarray(rgb).shape[:2], np.uint8)
+            for m in out.values():
+                claimed |= m
+            out["other"] = cv2.bitwise_not(claimed)
+            return out
+
+    return AnyColour(ctx.cfg, ctx.scene, ctx.cal)
+
+
+class Trace:
+    """Everything the agent did, untruncated, for working out afterwards what failed and why.
+    <dir>/episode_NNN.jsonl: one JSON object per line (reset, tool call with full arguments, full tool result,
+    what the model said, model errors, each robot motion). <dir>/frames/: the head colour image (jpg) and depth
+    image (16-bit png, mm) behind every detection, with the detections next to them (json)."""
+
+    def __init__(self):
+        self.dir = os.environ.get("ROBOT_TRACE_DIR", "")
+        self.episode, self.frame, self._lock = -1, 0, threading.Lock()
+
+    def reset(self, **info):
+        self.episode += 1
+        self.frame = 0
+        self.write("reset", **info)
+
+    def write(self, kind, **data):
+        if not self.dir or self.episode < 0:
+            return
+        import json
+        import time
+        try:
+            os.makedirs(self.dir, exist_ok=True)
+            with self._lock, open(os.path.join(self.dir, f"episode_{self.episode:03d}.jsonl"), "a") as f:
+                f.write(json.dumps({"wall": round(time.time(), 2), "kind": kind, **data}, default=str) + "\n")
+        except Exception:  # noqa: BLE001  (tracing must never break a run)
+            pass
+
+    def frame_dump(self, obs, t, detections):
+        if not self.dir or self.episode < 0:
+            return
+        import json
+        import cv2
+        try:
+            d = os.path.join(self.dir, "frames")
+            os.makedirs(d, exist_ok=True)
+            stem = os.path.join(d, f"ep{self.episode:03d}_{self.frame:02d}_t{t:06.2f}")
+            self.frame += 1
+            cv2.imwrite(stem + ".jpg", np.ascontiguousarray(obs["head_rgb"][..., ::-1]), [cv2.IMWRITE_JPEG_QUALITY, 92])
+            if obs.get("head_depth") is not None:
+                cv2.imwrite(stem + "_depth.png", np.ascontiguousarray(obs["head_depth"]).astype(np.uint16))
+            with open(stem + ".json", "w") as f:
+                json.dump({"t": t, "detections": detections}, f)
+        except Exception:  # noqa: BLE001
+            pass
 
 
 _robot = None

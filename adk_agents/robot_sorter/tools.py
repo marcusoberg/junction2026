@@ -146,8 +146,8 @@ def _detect(robot):
     # The ONLY source of object positions: the head camera's colour and depth images in `obs`. Nothing here (or
     # anywhere in this package) asks the simulator where an object is.
     found = detect_camera(ctx, obs, shapes=os.environ.get("ROBOT_SHAPES", "1") == "1")
-    found.sort(key=lambda o: -o.extra.get("n_px", 0))                    # one object whose hue straddles two colour
-    found = [o for i, o in enumerate(found)                               # names is seen twice: keep the larger blob
+    found.sort(key=lambda o: -o.extra.get("n_px", 0))                    # one object matched by two masks is seen
+    found = [o for i, o in enumerate(found)                               # twice: keep the larger blob
              if all(np.linalg.norm(o.xyz[:2] - p.xyz[:2]) > 0.03 for p in found[:i])]
     found.sort(key=lambda o: -o.xyz[1])                                   # left to right
     known = dict(robot.objects)
@@ -157,19 +157,24 @@ def _detect(robot):
         if d < SAME_OBJECT_M:
             o.id = i
             known.pop(i)
-        else:
-            robot.id_count[o.color] = robot.id_count.get(o.color, 0) + 1
-            o.id = f"{o.color}_{robot.id_count[o.color]}"
+        else:                    # ids say nothing about colour: a colour name guessed from the hue was wrong often
+            robot.id_count["obj"] = robot.id_count.get("obj", 0) + 1     # enough (orange read as yellow) to put
+            o.id = f"obj_{robot.id_count['obj']}"                         # objects in wrong bins
     robot.objects = {o.id: o for o in found}
-    hw = obs["head_rgb"].shape[:2]
+    rgb = obs["head_rgb"]
+    hw = rgb.shape[:2]
     out = []
     for o in found:
         y, x = xyz_to_point(ctx, o.xyz, hw)
-        out.append({"id": o.id, "color": o.color, "side": "left" if o.xyz[1] > 0 else "right",
+        u, v = (int(round(c)) for c in o.extra.get("uv", (x / 1000 * (hw[1] - 1), y / 1000 * (hw[0] - 1))))
+        patch = rgb[max(0, v - 4):v + 5, max(0, u - 4):u + 5].reshape(-1, 3)
+        out.append({"id": o.id, "side": "left" if o.xyz[1] > 0 else "right",
                     "position_m": [round(float(o.xyz[0]), 3), round(float(o.xyz[1]), 3)],
                     "point": [int(round(y)), int(round(x))],
+                    "rgb": [int(c) for c in np.median(patch, axis=0)] if len(patch) else None,
                     "shape_guess": o.shape,
                     "yaw_deg_guess": None if o.yaw is None else round(float(np.degrees(o.yaw)), 1)})
+    robot.trace.frame_dump(obs, robot.t, out)
     return out
 
 
@@ -198,6 +203,8 @@ def _target(robot, object_id, point, shape, yaw_deg):
     else:
         raise ToolError("say which object: object_id (from look) or point ([y, x] on the head camera image)")
     yaw = np.radians(yaw_deg) if yaw_deg is not None and shape in ("cube", "triangle") else None
+    if yaw is None and shape == "triangle" and object_id and seen.shape == "triangle" and seen.yaw is not None:
+        yaw = float(seen.yaw)      # a triangular prism needs the hand turned to its faces: use the measured rotation
     return WorldObject(object_id or "pointed", color, xyz, shape if yaw is not None else None, yaw, source=source)
 
 
@@ -416,11 +423,12 @@ async def look() -> dict:
     colour that stands on the counter at object height; if it misses an object you can see, use point instead.
 
     Returns:
-      objects_on_counter: one entry per object: id, color (a rough name from its hue, which can be wrong under
-        coloured light: your next live view shows the head image with every id drawn on its object, so check the
-        real colour and shape there), side of the robot it lies on, position_m [x forward, y left] in metres from the robot's
+      objects_on_counter: one entry per object: id (says nothing about colour or shape), rgb (the colour the
+        camera measured at its top face, 0-255: compare objects with each other, e.g. orange has much less green
+        than yellow), side of the robot it lies on, position_m [x forward, y left] in metres from the robot's
         pelvis, point [y, x] in the head image (0..1000), and a rough guess of shape and rotation (often wrong:
-        trust the image over it).
+        trust the image over it). Your next live view shows the head image with every id drawn on its object:
+        decide each object's colour and shape from that image.
       bins: where the three bins are, as position_m.
     """
     robot = get_robot()
@@ -521,7 +529,8 @@ async def pick_and_place(
       point: [y, x] of the object in the HEAD camera image, each 0..1000; point at the middle of its top face.
       arm: Which arm to use. Leave out to let the planner choose. The left bin can only be reached by the left
         arm and the right bin only by the right arm.
-      shape: The object's shape, if you can see it. With yaw_deg, cubes and triangles are gripped on flat faces.
+      shape: The object's shape, if you can see it. Always pass "triangle" for a triangular prism: the hand is
+        then turned to grip its flat faces (with yaw_deg if you give it, else the rotation the camera measured).
       yaw_deg: Rotation of the object about the vertical axis in degrees (0 = an edge pointing away from the
         robot). Only used with shape cube or triangle.
       finger_direction_deg: Where the fingers point: 0 = away from the robot, +90 = to its left.
