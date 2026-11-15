@@ -292,6 +292,18 @@ SCENES = {
     "real-wide": ("--colors real --dr wide --placement wide", "wide"),      # orange / yellow can be ambiguous here
     # The table physically moved relative to the robot, while the policy keeps the original scene file (third entry:
     # settings for the policy server). "-nocal": the agent without calibrate / measure_scene, for comparison.
+    "nominal-er": ("", "", "ROBOT_ER_LOOK=1"),                              # every look also asks the Robotics-ER model
+    "nominal-real": ("", "", "ROBOT_GRIP=firm ROBOT_FINGER_SENSORS=0"),     # the real robot's code path, run in the sim
+    "nominal-firm": ("", "", "ROBOT_GRIP=firm"),                            # the real hands' firmer grip, forced in the sim
+    "nominal-noer": ("", "", "ROBOT_ER=0"),                                 # the agent without the find_blocks tool
+    # only the local-IK way of moving an object (grab + drop_in, move_hand, grip): the organisers' planner tools are off
+    "nominal-localik": ("", "", "ROBOT_TOOLS_OFF=pick_and_place,pick,place,hand_over,check_plan,choose_arm"),
+    "nominal-real-localik": ("", "", "ROBOT_GRIP=firm ROBOT_FINGER_SENSORS=0 "
+                                     "ROBOT_TOOLS_OFF=pick_and_place,pick,place,hand_over,check_plan,choose_arm"),
+    "venue-shape-er": ("--colors venue --placement wide --instructions shape", "train", "ROBOT_ER_LOOK=1"),
+    "venue-shape-noer": ("--colors venue --placement wide --instructions shape", "train", "ROBOT_ER=0"),
+    "nominal-pp": ("", "", "ROBOT_HEAD_PP=320,240"),                        # the sim's real principal point (A14)
+    "nominal-er-pp": ("", "", "ROBOT_ER_LOOK=1 ROBOT_HEAD_PP=320,240"),
     "raised": ("--table 0,0,0.03", "", f"ROBOT_SCENE_FILE={SCENE_ORIG}"),
     "raised-nocal": ("--table 0,0,0.03", "", f"ROBOT_SCENE_FILE={SCENE_ORIG} ROBOT_SELFCAL=0"),
     "moved": ("--table 0.02,-0.02,0.02", "", f"ROBOT_SCENE_FILE={SCENE_ORIG}"),

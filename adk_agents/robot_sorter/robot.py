@@ -22,6 +22,10 @@ import threading
 import numpy as np
 
 HZ = 30.0
+# The box-outline match in headpose.fit_head_pose scores 0.60-0.74 in the sim and 0.36-0.47 on the real robot, whose
+# boxes are not the scene file's (run of 15 Nov: 0.36, with a 9 deg yaw). Below this score the fit keeps only the
+# table plane (tilt, height); the bins are then measured directly (bins.py).
+WALL_SCORE_MIN = 0.55
 
 
 class Robot:
@@ -35,6 +39,7 @@ class Robot:
         self.session = None                    # ADK session the mock episode belongs to
         self._arm_model = None                 # the arms' surface from the robot model, built on first use
         self.arm_cam_T = None                  # the last camera pose measured against the arms
+        self._gravity = None                   # scratch data for the feed-forward torque (see _tau_ff)
         self.scene_offset = np.zeros(3)        # how far calibrate has moved the scene from the scene file
         self.waist = (0.0, 0.0)                # upper-body pitch, roll (rad) calibrate has put into the robot model
         self.arm_fit_model = None              # which arm model the last camera fit used
@@ -56,6 +61,14 @@ class Robot:
                 # sim tests with a moved table give the policy the original file while the sim uses the edited one.
                 self._ctx = SkillContext(scene=os.environ.get("ROBOT_SCENE_FILE") or None)
                 self.scene_origin0 = np.asarray(self._ctx.scene.cfg["counter"]["mat_origin_in_pelvis"], float).copy()
+                # ROBOT_HEAD_PP="cx,cy": the head camera's principal point, if not the calibration file's. The Isaac
+                # sim renders with it at the image centre (320, 240) although the file says (325.0, 250.9): with the
+                # file's value every object is seen (-1.4, -2.7) mm from where it is (98 objects, std 0.5 mm), with
+                # the centre (+0.2, +0.4) mm. The fit cannot tell the two apart from one image, so it is a setting.
+                pp = os.environ.get("ROBOT_HEAD_PP", "")
+                if pp:
+                    K = self._ctx.cal.cams[self._ctx.camera.cam].K
+                    K[0, 2], K[1, 2] = (float(v) for v in pp.split(","))
                 if os.environ.get("ROBOT_ANY_COLOUR", "1") == "1":
                     # The organisers' detector knows the sim's red / yellow / blue. The real objects are purple,
                     # yellow and orange and the held-out sim may differ, so cover the rest of the hue circle
@@ -82,19 +95,69 @@ class Robot:
         cam = ctx.cal.cams[ctx.camera.cam]
         try:
             cam.T_pelvis_optical = self.head_T0.copy()
-            fit = fit_head_pose(depth, ctx.cal, ctx.scene)
+            fit = fit_head_pose(depth, ctx.cal, ctx.scene, min_wall_score=WALL_SCORE_MIN)
             # 20 deg: on the real robot's frames (data drop 3, 15 episodes) this fit reads 14.2-15.2 deg, so the
             # default limit of 15 threw one in fifteen away and the rest passed by under a degree.
-            used = bool(camera_move_ok(fit, self.head_T0, max_tilt_deg=20.0))
-            if used:
-                cam.T_pelvis_optical = np.asarray(fit.T, float)
-            self.pose_fit = {"used": used, "summary": fit.summary(), "fit_ok": bool(fit.ok),
-                             "camera_moved_m": float(np.linalg.norm(np.asarray(fit.T, float)[:3, 3] - self.head_T0[:3, 3]))}
+            if fit.ok and fit.dxy == (0.0, 0.0) and fit.dyaw_deg == 0.0:
+                # The boxes in view are not the scene file's (the real robot): only the table plane was fitted.
+                self.pose_fit = self._fit_from_table(depth, fit)
+            else:
+                used = bool(camera_move_ok(fit, self.head_T0, max_tilt_deg=20.0))
+                if used:
+                    cam.T_pelvis_optical = np.asarray(fit.T, float)
+                self.pose_fit = {"used": used, "summary": fit.summary(), "fit_ok": bool(fit.ok),
+                                 "camera_moved_m": float(np.linalg.norm(np.asarray(fit.T, float)[:3, 3] - self.head_T0[:3, 3]))}
         except Exception as e:  # noqa: BLE001
             cam.T_pelvis_optical = self.head_T0.copy()
             self.pose_fit = {"used": False, "summary": f"fit failed: {e!r}"}
         self.log(f"[robot t={self.t:6.2f}] head camera pose fit: {'used' if self.pose_fit['used'] else 'NOT used'}; {self.pose_fit['summary']}")
         self.trace.write("head_pose_fit", t=round(self.t, 2), **self.pose_fit)
+
+    def _fit_from_table(self, depth, fit, lean_min_deg=2.5, max_dz_m=0.10):
+        """The robot model is taken as true (camera where the URDF and the waist angles put it); the table is
+        measured. A table that is tilted in the robot's frame is a robot that leans: the tilt goes into the model as
+        upper-body pitch and roll, so the pelvis frame the planner works in is level with the table and the arms'
+        joint targets are right for where the hands really are. The table's height in that frame replaces the
+        scene file's. Nothing is taken from the box template; the bins are measured separately (bins.py).
+        Evidence: on the real frames of data drop 3 the camera sits within 2-3 deg and 7 mm of the model's pose
+        when measured against the arms, while the table is tilted 12 deg; in the real run of 15 Nov the template
+        fit was thrown out (yaw 9 deg) and the first look worked in a frame tilted by 6 deg."""
+        from . import selfcal
+        from .headpose import fit_head_pose
+        ctx = self.ctx
+        cam = ctx.cal.cams[ctx.camera.cam]
+        lean = None
+        if fit.tilt_deg > lean_min_deg:
+            S = np.eye(4)
+            S[:3, :3] = (np.asarray(fit.T, float)[:3, :3] @ self.head_T0[:3, :3].T).T      # the table's tilt in the model frame
+            pitch, roll = selfcal.level_angles(S)
+            self.set_waist(self.waist[0] + pitch, self.waist[1] + roll)                     # moves head_T0 with the upper body
+            lean = (float(np.degrees(pitch)), float(np.degrees(roll)))
+            cam.T_pelvis_optical = self.head_T0.copy()
+            fit = fit_head_pose(depth, ctx.cal, ctx.scene, min_wall_score=WALL_SCORE_MIN)    # what is left: under a degree
+        T = self.head_T0.copy()
+        if fit.ok:
+            T[:3, :3] = np.asarray(fit.T, float)[:3, :3]                                     # the small rest of the tilt
+        K = np.asarray(cam.K, float)
+        plane = selfcal.table_plane(selfcal.optical_points(np.asarray(depth), K, cam.depth_scale))
+        dz = 0.0
+        if plane is not None:
+            n = T[:3, :3] @ plane[0]
+            d = plane[1] - n @ T[:3, 3]
+            z = float(-(d + n[0] * 0.35) / n[2])                                             # table height 35 cm ahead
+            dz = z - ctx.scene.counter_z
+            if abs(dz) <= max_dz_m:
+                o = np.asarray(ctx.scene.cfg["counter"]["mat_origin_in_pelvis"], float)
+                ctx.scene.cfg["counter"]["mat_origin_in_pelvis"] = [float(o[0]), float(o[1]), float(o[2] + dz)]
+                self.scene_offset = self.scene_offset + np.array([0.0, 0.0, dz])
+                ctx.planner.__dict__.pop("_reach", None)
+                self.aside = self._aside_pose(ctx)
+        cam.T_pelvis_optical = T
+        self.bins_measured = None
+        text = ("table plane only (the boxes in view are not the scene file's): "
+                + (f"robot leans, upper body set to pitch {np.degrees(self.waist[0]):+.1f} roll {np.degrees(self.waist[1]):+.1f} deg; " if lean else "no lean; ")
+                + f"table {dz * 1000:+.0f} mm from the scene file")
+        return {"used": True, "summary": text, "fit_ok": True, "camera_moved_m": 0.0, "lean_deg": lean, "table_dz_m": dz}
 
     @staticmethod
     def _aside_pose(ctx):
@@ -140,6 +203,10 @@ class Robot:
             self.waiting = None                # an arm waiting above a bin for its next object ("left" | "right")
             self.placed = {}                   # bin -> objects we dropped in it (spreads the drop points)
             self.view_requests = []            # camera views the agent asked for; shown with the next model call
+            self.needs_control = []            # checks that went wrong since the last model call (tools._needs_control)
+            self.bins_measured = None          # {bin: [x, y]} measured from the camera this episode (bins.py), or None
+            self.finger_baseline = {}          # arm -> what its finger sensors read with the hand open (tools._grasp_check)
+            self.unverified = None             # a held grasp nobody could verify: {"id", "xy" it stood at, "side"} (tools.drop_in)
             self.pose_fit = None               # head camera pose fit of this episode (see fit_head_camera)
             self.arm_views, self.arm_view_t = [], -1.0   # moments with an arm still in view (see measure_scene)
             self.arm_hist = []                 # recent (t, arm_q), to tell whether the arms are standing still
@@ -188,15 +255,18 @@ class Robot:
         used = cam.T_pelvis_optical.copy()
         try:
             cam.T_pelvis_optical = self.head_T0.copy()
-            fit = fit_head_pose(np.asarray(depth), ctx.cal, ctx.scene)
+            fit = fit_head_pose(np.asarray(depth), ctx.cal, ctx.scene, min_wall_score=WALL_SCORE_MIN)
         finally:
             cam.T_pelvis_optical = used
         if not fit.ok:
             return None, None, f"table not found in the depth image ({fit.why})"
         self.last_fit_T = np.asarray(fit.T, float)
         frames = [(selfcal.arm_points(d, K, cam.depth_scale), aq, hq) for d, aq, hq in views]
-        frames = [(P[::max(1, len(P) // 4000)], aq, hq) for P, aq, hq in frames]      # enough for the fit, and fast
-        guesses = selfcal.starts(self.head_T0, self.arm_cam_T, np.asarray(fit.T, float))
+        frames = [(P[::max(1, len(P) // 1500)], aq, hq) for P, aq, hq in frames]      # enough for the fit, and fast
+        # the first time: many starting guesses; afterwards the last result is close (the camera does not move on the
+        # robot), and that makes the measurement several times faster (it took 7 s per call on the venue machine)
+        guesses = (selfcal.starts(self.head_T0, self.arm_cam_T, np.asarray(fit.T, float)) if self.arm_cam_T is None
+                   else [self.arm_cam_T, np.asarray(fit.T, float), self.head_T0])
         arm = None
         for model in self._arm_model if frames else ():
             f = selfcal.camera_from_arms(frames, model, guesses)
@@ -239,6 +309,7 @@ class Robot:
         self.waist = (float(pitch), float(roll))
         self.aside = self._aside_pose(ctx)
         self.objects, self.seen = {}, []
+        self.bins_measured = None
         self.log(f"[robot t={self.t:6.2f}] upper body set to pitch {np.degrees(pitch):+.1f} deg, roll {np.degrees(roll):+.1f} deg in the robot model")
         self.trace.write("waist_set", t=round(self.t, 2), pitch_deg=float(np.degrees(pitch)), roll_deg=float(np.degrees(roll)))
 
@@ -266,6 +337,7 @@ class Robot:
         self.pose_fit = {"used": True, "fit_ok": True, "camera_moved_m": 0.0,
                          "summary": f"scene moved by {np.round(self.scene_offset * 1000).astype(int).tolist()} mm after calibrate"}
         self.objects, self.seen = {}, []                   # every position measured before is in the old frame
+        self.bins_measured = None
         self.log(f"[robot t={self.t:6.2f}] scene moved by {np.round(t * 1000).astype(int).tolist()} mm (total "
                  f"{np.round(self.scene_offset * 1000).astype(int).tolist()} mm from the scene file)")
         self.trace.write("scene_applied", t=round(self.t, 2), offset_m=t.tolist(), total_m=self.scene_offset.tolist())
@@ -294,7 +366,7 @@ class Robot:
                 self.queue_a, self.queue_h = self.queue_a[k:], self.queue_h[k:]
                 self.arm_cmd, self.hand_cmd = a[-1].copy(), h[-1].copy()
                 self.ticks += len(a)
-                return {"arm_q_target": a.copy(), "hand_q_target": h.copy(), "done": False}
+                return {"arm_q_target": a.copy(), "hand_q_target": h.copy(), "done": False, **self._tau_ff(a, h)}
             if self.motion is not None:        # every tick was sent, and `obs` was taken after the last one
                 self._finish("completed")
             if self.ticks >= self.warmup_ticks:
@@ -302,7 +374,44 @@ class Robot:
             k = 1 if self.finished else max(1, int(ctx.cfg["motion"].get("hold_ticks", 1)))
             self.ticks += k
             return {"arm_q_target": np.repeat(self.arm_cmd[None], k, 0),
-                    "hand_q_target": np.repeat(self.hand_cmd[None], k, 0), "done": bool(self.finished)}
+                    "hand_q_target": np.repeat(self.hand_cmd[None], k, 0), "done": bool(self.finished),
+                    **self._tau_ff(np.repeat(self.arm_cmd[None], k, 0), np.repeat(self.hand_cmd[None], k, 0))}
+
+    # Feed-forward torque. The real arms are position-controlled with kp 80 (shoulders, elbow) and 40 (wrists)
+    # (xr_teleoperate robot_arm.py), so without a feed-forward torque they settle below their target by gravity
+    # torque / kp: at the poses of a sorting episode that is up to 5.8 deg per joint and the hand hangs a median
+    # 3-4 cm (worst 7 cm) low. The teleop app that recorded the organisers' demonstrations sends the gravity torque
+    # with every target. The organisers merged their pull request 3 on 15 Nov 04:52: their RUNNER adds this torque
+    # itself (--arm-gravity-ff). So by default we send NOTHING: the correction must not be applied twice (both
+    # together would push the arms up by the same 3-4 cm). Their pull request 4 (open, not merged) would let the
+    # policy send it with the action key arm_tau_ff (Nm, same rows as arm_q_target, clamped by their runner to
+    # +-15 / +-2.5 Nm); ROBOT_TAU_FF=1 sends it, for a runner that takes it from the policy and adds none itself.
+    TAU_MAX = np.array([15.0, 15.0, 15.0, 15.0, 2.5, 2.5, 2.5] * 2)
+
+    def _tau_ff(self, arm, hand):
+        """{} unless ROBOT_TAU_FF=1; then {"arm_tau_ff": (k, 14)}: the gravity torque of the arm joints at each commanded
+        row, from the robot model as it stands (including an upper-body pitch calibrate has set); {} on any error."""
+        if os.environ.get("ROBOT_TAU_FF", "0") != "1":
+            return {}
+        try:
+            kin = self.ctx.kin
+            if self._gravity is None:                      # its own data: act() must not share the planner's
+                self._gravity = (kin.model.createData(), np.zeros(kin.model.nv))
+            data, zero = self._gravity
+            out = np.empty((len(arm), 14))
+            last = None
+            for i, (a, h) in enumerate(zip(arm, hand)):
+                if last is not None and np.array_equal(a, last[0]) and np.array_equal(h, last[1]):
+                    out[i] = out[i - 1]
+                    continue
+                q = kin.q0.copy()
+                q[kin.arm_iq], q[kin.hand_iq] = a, h
+                out[i] = kin.pin.rnea(kin.model, data, q, zero, zero)[kin.arm_iv]
+                last = (a, h)
+            lim = np.minimum(self.TAU_MAX, kin.model.effortLimit[kin.arm_iv])
+            return {"arm_tau_ff": np.clip(out, -lim, lim)}
+        except Exception:  # noqa: BLE001  (a missing torque is a sagging arm; a crash here is a lost episode)
+            return {}
 
     # ------------------------------------------------------------------ tool side
     @property

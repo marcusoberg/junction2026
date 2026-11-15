@@ -2,6 +2,7 @@
 *
 !aaltonomous-humanoid/aaltonomous
 !aaltonomous-humanoid/third_party/xr_teleoperate/assets/g1/g1_body29_hand14.urdf
+!aaltonomous-humanoid/third_party/xr_teleoperate/assets/g1/meshes
 !agent
 !adk_agents/robot_sorter
 aaltonomous-humanoid/aaltonomous/data

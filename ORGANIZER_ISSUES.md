@@ -192,6 +192,20 @@ Severity: **A** = can change scores or break a build, **B** = sim/real mismatch 
   episodes start from widely different arm poses (joint std 0.1-0.4 rad), hands about 10 cm above the table, where
   the sim's home pose has them 21 cm up.
 
+### A16. Without feed-forward torque the real arms hang 3-4 cm below their targets (pull requests 3 and 4)
+
+- The real arms are position-controlled with kp 80 (shoulders, elbow) and 40 (wrists) (`xr_teleoperate`
+  `robot_arm.py`). `DDSBackend.command` on main sends feed-forward torque 0. The teleop app that recorded the data
+  drops sends the gravity torque with every target, so the drops show none of this.
+- Gravity torque at the arm targets of one of our sim episodes (163 poses): up to 8.1 Nm at a shoulder, so a joint
+  settles up to 5.8 deg below its target and the hand a median 32-35 mm low (worst 71 mm), mostly downwards.
+- Open pull requests (15 Nov, not on main when we looked at 04:30): 3 lets the runner add the gravity torque
+  (`--arm-gravity-ff`, default off); 4 adds an optional action key `arm_tau_ff` for the policy.
+- Pull request 3 was merged on 15 Nov 04:52 (runner flag `--arm-gravity-ff`, default off); 4 is not merged. Our
+  policy therefore sends no torque by default (`ROBOT_TAU_FF=1` would send it, within 0.02 Nm of the runner's formula).
+- Questions: which of the two will the finals runner use? If both, are the torques added (that would push the arms
+  up by the same 3-4 cm)? With a 12 deg forward lean (A15) the upright-robot gravity torque is off by up to 0.7 Nm.
+
 ## B. Numbers marked "(default)" that we need measured
 
 | Item | Value in repo | Where |

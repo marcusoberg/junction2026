@@ -24,6 +24,11 @@ import numpy as np
 
 TRIANGLE_GRIPS_DEG = (105.0, 90.0, 75.0)
 PLAIN_TURNS_DEG = (None, 40.0, -40.0)        # the hand's natural direction, then turned either way
+# The right arm's plain pinch on a cylinder within 10 cm of the midline held 21 of 52 (40 %), the same pinch turned
+# +40 deg 11 of 14 (79 %); on the midline cylinder of layout 1001 the plain pinch missed first time in 11 of 11
+# episodes (all saved sim runs, 15 Nov). There the turned pinch goes first.
+MIDLINE_M = 0.10
+RIGHT_MIDLINE_TURNS_DEG = (40.0, None, -40.0)
 FINGER_REF_DEG = {"left": -25.0, "right": 25.0}     # the hand's natural finger direction (as in the oracle)
 RIDGE_MAX_DEV_DEG = 95.0
 
@@ -36,10 +41,11 @@ class Option:
     variation: tuple = ()          # what the model changed (offsets, tilt, height): a different variation is a new option
 
     def text(self):
-        what = {"faces": "flat faces", "ridge": "across the ends of the lying block", "plain": "plain pinch"}[self.kind]
+        what = {"faces": "flat faces", "ridge": "across the ends of the lying block", "plain": "plain pinch",
+                "local": "local IK pinch"}[self.kind]
         if self.kind == "faces" and self.angle is not None:
             what += f" at {self.angle:.0f} deg"
-        if self.kind == "plain" and self.angle is not None:
+        if self.kind in ("plain", "local") and self.angle is not None:
             what += f", hand turned {self.angle:+.0f} deg"
         return f"{self.arm} arm, {what}" + (f", with {dict(self.variation)}" if self.variation else "")
 
@@ -58,7 +64,8 @@ def options(obj, arms, variation=(), direction=None):
         elif obj.shape == "cube" and obj.yaw is not None:
             kinds = [("faces", None)] + [("plain", t) for t in PLAIN_TURNS_DEG]
         else:
-            kinds = [("plain", t) for t in PLAIN_TURNS_DEG]
+            near = arm == "right" and abs(float(obj.xyz[1])) < MIDLINE_M
+            kinds = [("plain", t) for t in (RIGHT_MIDLINE_TURNS_DEG if near else PLAIN_TURNS_DEG)]
         out += [Option(arm, k, a, tuple(variation)) for k, a in kinds]
     return out
 

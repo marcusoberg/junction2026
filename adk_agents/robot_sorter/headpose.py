@@ -78,7 +78,7 @@ def _bin_outlines(scene, res=0.002):
     return scene.mat_to_pelvis(np.c_[pm, np.zeros(len(pm))])[:, :2]
 
 
-def fit_head_pose(depth, cal, scene, T0=None, rng=None, max_range_mm=1600):
+def fit_head_pose(depth, cal, scene, T0=None, rng=None, max_range_mm=1600, min_wall_score=0.35):
     """Fit the head camera pose (pelvis <- optical) to one depth image. Returns PoseFit; .ok False keeps T0."""
     import cv2
     T0 = np.asarray(cal._T(CAM) if T0 is None else T0, float)
@@ -169,7 +169,7 @@ def fit_head_pose(depth, cal, scene, T0=None, rng=None, max_range_mm=1600):
     _, yaw, dx, dy = best
     cst = cost(yaw, dx, dy)[1]
     fit.wall_score = float((cst < 0.004).mean())
-    if fit.wall_score < 0.35:
+    if fit.wall_score < min_wall_score:
         fit.why = f"bin outline fit weak ({fit.wall_score:.2f}): kept calibration x, y, yaw"
         return fit
     c, s = np.cos(yaw), np.sin(yaw)

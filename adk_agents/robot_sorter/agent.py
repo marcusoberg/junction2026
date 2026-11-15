@@ -27,7 +27,11 @@ from google.genai import types
 from .robot import get_robot
 from .tools import TOOLS, _hand_summary
 
-MODEL = os.environ.get("ROBOT_AGENT_MODEL", "gemini-3.8-flash")
+# The model that controls the robot: Gemini Robotics-ER, Google's embodied-reasoning model, which sees the cameras and
+# calls the robot's tools (its documented orchestration use). Checked 15 Nov: it works as the ADK agent's model with
+# no other change, decides like gemini-4-hydrogen and answers faster (1.7 s per turn against 2.4 s; 1.6 against 4.4 s
+# on hard scenes).
+MODEL = os.environ.get("ROBOT_AGENT_MODEL", "gemini-robotics-er-2-preview")
 CAMERA_KEYS = {"head": "head_rgb", "left_wrist": "left_wrist_rgb", "right_wrist": "right_wrist_rgb",
                "head_depth": "head_depth"}
 
@@ -60,19 +64,38 @@ How to work, one step at a time (look, act, check, repeat):
    object_moved_m shows it was pushed, max_tilt_deg, grasp_height_frac, finger_direction_deg) or hand it over.
    A block lying on its side (lying_ridge_deg) is gripped across its two ends automatically.
    If look returns a camera_check WARNING, call calibrate once before the first pick, then look again.
+   look finds objects by height alone: it can list a hand, a wrist or a bin edge as an object (such a detection
+   carries probably_not_a_block: do not pick it unless the image clearly shows a block there) and it can miss a
+   block that touches a bin or another block. When the list and the image disagree, or look returns block_check,
+   call find_blocks once (about 2 s): a second model checks which detections are blocks and adds the ones look lost.
 4. "failed: no safe plan" means nothing moved; the reason names what was in the way. Find a plan that works
    before moving: call choose_arm to see what each arm can do, and check_plan with variations (several calls in
    one turn are fine): the other arm, max_tilt_deg 50, a pregrasp_offset_m away from the bin rim or the body that
    was in the way, a different finger_direction_deg. Run the one that is ok with pick_and_place and the same
    arguments. If only the grasp is possible (the bin is out of that arm's reach), call hand_over and then
    pick_and_place. If nothing works, leave the object and go on.
+   A second way that does not use that planner: grab with for_bin (a pinch from above by local IK, the arm moving
+   as little as possible from where it is) and then drop_in (carries to the bin and releases as far inside as the arm reaches).
+   Use grab + drop_in when pick_and_place has no safe plan because of the bin or the path, when the same object has
+   missed twice, or when releases land short of a bin (call find_bins first then: it measures the bins again).
+   For a correction by hand there are move_hand (one hand to [x, y, height]) and grip (close / open).
 5. Call done only when every object is sorted, or every remaining object has no grasp left to try, or less than
    about 12 s remain. Do not stop while time is left and something can still be tried.
 
 Rules:
 - "failed" means no safe plan was found and nothing moved; the reason says why. Do something different.
 - Sort the easy objects first and come back to a difficult one at the end.
-- The left bin is reachable only with the left arm and the right bin only with the right arm.
+- The left bin is reachable only with the left arm and the right bin only with the right arm. pick_and_place knows
+  this: it picks the arm itself and reaches across the body for an object on the far side. Call it directly first.
+  Use hand_over only after pick_and_place has returned "failed: no safe plan" for that object (a relay takes twice
+  as long and leaves the object near the middle, where both arms grasp worst).
+- Order: cubes and cylinders first, triangular prisms last. A triangular prism gets two attempts while other
+  objects are still waiting.
+- Checks: after the lift a fast vision model looks through the wrist camera to see whether the hand holds the
+  object; before the hand opens it checks that the hand is above the bin; after the release that the object is in
+  the bin. "check_failed" means the hand did NOT open and still holds the object: look at the attached views, then
+  call place for that bin if the hand is above it, or place_on_counter. A line starting with CHECK in the state
+  says which check went wrong and why.
 - Colour and shape: look gives every object a gemini_label, the colour and shape judged by a fast Gemini vision
   model that compared all the objects in the image, with a confidence. Use it together with the image. The
   camera and the light wash colours out (yellow can look pale green, purple can look blue, orange can look tan),
@@ -147,6 +170,8 @@ def live_view(robot):
         parts.append(types.Part.from_bytes(data=image, mime_type="image/jpeg"))
     state = {"instruction": robot.instruction,
              "holding": f"an object in the {robot.holding} hand" if robot.holding else "nothing"}
+    for why in robot.needs_control:                    # what a Decisions API check found wrong since the last turn
+        parts.append(types.Part(text="CHECK: " + why))
     try:
         state["hands_closed_fraction"] = {s: _hand_summary(robot, s)["closed_fraction"] for s in ("left", "right")}
     except Exception:  # noqa: BLE001  (state is a convenience; never fail a model call over it)
@@ -177,6 +202,7 @@ async def attach_live_view(callback_context: CallbackContext, llm_request: LlmRe
         level, why = thinking_level(robot)
         llm_request.config.thinking_config = types.ThinkingConfig(thinking_level=level)
         robot.trace.write("thinking", t=round(robot.t, 2), level=level, why=why)
+    robot.needs_control = []                           # shown to the model on this turn; said once
     return None
 
 
@@ -195,6 +221,10 @@ def thinking_level(robot):
       - whether the last moves went wrong (missed, failed, aborted);
       - whether the instruction has exceptions ("the rest", "other", "whatever", "except")."""
     # gemini-4-hydrogen supports low, medium and high (it rejects "minimal": checked live, 14 Nov).
+    if robot.needs_control:            # a Decisions API check went wrong: this turn is the one that needs thought
+        return "medium", "a check went wrong: " + "; ".join(robot.needs_control)[:200]
+    if "robotics-er" in str(MODEL):    # ER as the controller: "medium" on routine turns was slower and no better
+        return "low", "routine (Robotics-ER)"
     if not robot.seen:
         return "low", "nothing looked at yet: the only sensible call is look"
     conf = [min(l.get("colour_confidence", 1.0), l.get("shape_confidence", 1.0))
