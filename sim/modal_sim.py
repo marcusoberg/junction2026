@@ -101,7 +101,7 @@ image = (
     # The ADK agent's environment, with the versions it was tested with. No pyzmq: without it the policy process
     # cannot reach the sim's scene service (ground-truth object poses), whatever the code does.
     .run_commands("/usr/local/bin/python -m venv /opt/adk && /opt/adk/bin/pip install --no-cache-dir google-adk==2.14.1 "
-                  "numpy==2.2.6 scipy==1.15.2 opencv-python-headless==4.10.0.84 pyyaml msgpack 'websockets>=12' pin==3.3.1")
+                  "numpy==2.2.6 scipy==1.15.2 opencv-python-headless==4.10.0.84 pyyaml msgpack 'websockets>=12' pin==3.3.1 gtsam==4.3.0")
     .add_local_file(HERE.parent / "submission/server.py", "/opt/submission/server.py")
     .add_local_file(HERE / "gen_demos.py", "/opt/sim/gen_demos.py")
     .add_local_file(HERE / "scene_variant.py", "/opt/sim/scene_variant.py")
@@ -281,6 +281,7 @@ def datagen(name: str, shards: int = 1, episodes: int = 2, seed: int = 100000, e
 
 
 # Named scenes for --action sweep: (arguments for sim/scene_variant.py, the sim's randomisation config).
+SCENE_ORIG = f"{APP_DIR}/aaltonomous/scene/scene.yaml.orig"
 SCENES = {
     "nominal": ("", ""),
     "nominal-dr": ("", "train"),                                            # the organisers' training randomisation
@@ -289,6 +290,12 @@ SCENES = {
     "venue-shape": ("--colors venue --placement wide --instructions shape", "train"),
     "pastel": ("--colors pastel --dr wide --placement wide", "wide"),
     "real-wide": ("--colors real --dr wide --placement wide", "wide"),      # orange / yellow can be ambiguous here
+    # The table physically moved relative to the robot, while the policy keeps the original scene file (third entry:
+    # settings for the policy server). "-nocal": the agent without calibrate / measure_scene, for comparison.
+    "raised": ("--table 0,0,0.03", "", f"ROBOT_SCENE_FILE={SCENE_ORIG}"),
+    "raised-nocal": ("--table 0,0,0.03", "", f"ROBOT_SCENE_FILE={SCENE_ORIG} ROBOT_SELFCAL=0"),
+    "moved": ("--table 0.02,-0.02,0.02", "", f"ROBOT_SCENE_FILE={SCENE_ORIG}"),
+    "moved-nocal": ("--table 0.02,-0.02,0.02", "", f"ROBOT_SCENE_FILE={SCENE_ORIG} ROBOT_SELFCAL=0"),
 }
 
 
@@ -308,10 +315,10 @@ def run_sweep(spec, tag, task, video, server_env, adk_script_for):
     for part in filter(None, (p.strip() for p in spec.split(","))):
         scene, eval_task, seeds = part.split(":")
         lo, _, hi = seeds.partition("-")
-        variant, dr = SCENES[scene]
+        variant, dr, policy_env = (SCENES[scene] + ("",))[:3]
         for seed in range(int(lo), int(hi or lo) + 1):
             # always: with no arguments the script puts the nominal scene back (the container may be a reused one)
-            script = f"python /opt/sim/scene_variant.py {variant} && " + adk_script_for(eval_task, 1, seed)
+            script = f"python /opt/sim/scene_variant.py {variant} && " + adk_script_for(eval_task, 1, seed, policy_env)
             jobs.append(((scene, eval_task, seed), (script, f"{tag}/{scene}-{eval_task}-{seed}", dr, task, True)))
     print(f"sweep {tag}: {len(jobs)} episodes, each in its own sim")
     rows, t0 = [], time.monotonic()
@@ -387,11 +394,11 @@ def main(action: str = "boot", script: str = "", trials: int = 3, dr: str = "", 
     #   --variant "--colors real --dr wide --placement wide --instructions shape" --dr wide
     #       edit the container's scene before the sim starts (sim/scene_variant.py): other object colours, shades,
     #       placements, shape-based instructions. With "--dr wide" in the variant also pass --dr wide.
-    def adk_script_for(eval_task, trials, seed):
+    def adk_script_for(eval_task, trials, seed, policy_env=""):
         return (
                       # a container is reused for the next job of a sweep: no server, trace or results left over
                       f"for p in $(pgrep -f robot_sorter); do grep -q '^python' /proc/$p/comm 2>/dev/null && kill $p; done; rm -rf /tmp/agent_trace /tmp/policy.log {APP_DIR}/runs/eval; sleep 1; "
-                      f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
+                      f"(ROBOT_TRACE_DIR=/tmp/agent_trace {server_env} {policy_env} PYTHONPATH={APP_DIR}:/opt/agent_pkg:/opt/adk_agents /opt/adk/bin/python "
                       f"-m robot_sorter.serve > /tmp/policy.log 2>&1 &); aalto sim && "
                       f"for i in $(seq 60); do grep -q ' ready\\|Traceback\\|Error' /tmp/policy.log && break; sleep 2; done; "
                       f"grep ' ready\\|Traceback\\|Error' /tmp/policy.log | tail -5; "

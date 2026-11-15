@@ -1,0 +1,1 @@
+{"t": 44.34, "detections": [{"id": "obj_3", "side": "right", "position_m": [0.28, -0.098], "point": [813, 731], "rgb": [200, 191, 67], "shape_guess": "cylinder", "yaw_deg_guess": null, "grasps_that_missed": ["right arm, plain pinch"], "gemini_label": {"colour": "yellow", "colour_confidence": 0.98, "shape": "cylinder", "shape_confidence": 0.97}}]}

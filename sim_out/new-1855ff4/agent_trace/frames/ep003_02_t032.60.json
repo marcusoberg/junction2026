@@ -1,0 +1,1 @@
+{"t": 32.60000000000002, "detections": [{"id": "obj_4", "side": "left", "position_m": [0.215, 0.09], "point": [989, 329], "rgb": [142, 190, 233], "shape_guess": "lying on its side", "yaw_deg_guess": null, "lying_ridge_deg": 81.6}]}

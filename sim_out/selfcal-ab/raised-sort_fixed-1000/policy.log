@@ -1,0 +1,77 @@
+2026-11-14 22:47:50,633 robot_sorter INFO adk/gemini-4-hydrogen ready
+2026-11-14 22:47:50,639 aaltonomous.policy_server INFO policy server 'adk/gemini-4-hydrogen' listening on 0.0.0.0:8000
+2026-11-14 22:48:42,890 websockets.server INFO connection open
+2026-11-14 22:48:45,077 robot_sorter INFO [agent] reset task=sort_fixed seed=1000: Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.
+2026-11-14 22:48:47,031 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:48:49,108 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:48:49,126 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:48:49,127 robot_sorter INFO [agent t=  1.20] look({})
+2026-11-14 22:48:49,139 robot_sorter INFO [robot t=  1.20] start arms aside (both arm, 0.9 s)
+2026-11-14 22:48:53,477 robot_sorter INFO [robot t=  2.64] arms aside: completed
+2026-11-14 22:48:54,484 robot_sorter INFO [robot t=  2.84] head camera pose fit: used; tilt 0.9 deg, shift (-0.9, -0.7) cm, yaw +0.0 deg, table 0.74, walls 0.74
+2026-11-14 22:48:55,376 robot_sorter INFO [agent t=  3.04] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_1', 'side': 'left', 'position_m': [0.306, 0.162], 'point': [708, 196], 'rgb': [194, 79, 78], 'shape_guess': 'cube', 'yaw_deg_guess': 19.9, 'gemini_label': {'colour': 'red', 'colour_confidence': 0.99, 'shape': 'cube', 'shape_confidence': 0.96}}, {'id': 'obj_2', 'side': 'left', 'position_m': [0.318, 0.015], 'point': [680, 499], 'rgb': [84, 125, 189], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'blue', 'colour_confidence': 0.99, 'shape': 'cylinder', 'shape_confidence': 1.0}}, {'id': 'obj_3', 'side': 'right', 'position_m': [0.295, -0.104], 'point': [733, 749], 'rgb': [200, 190, 64], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'yellow', 'colour_confidence': 0.98, 'shape': 'cylinder', 'shape_confidence': 0.97}}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 117.0, 'camera_check': "WARNING: to match the table and bins in the scene file, the camera would have to sit 3 cm from where the robot model has it. Either the camera mount is off or the table / the robot's place is not as in the file; grasps go wrong in the second case. Call calibrate once now, before picking, to measure which."}
+2026-11-14 22:48:55,387 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:48:57,015 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:48:57,017 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:48:57,017 robot_sorter INFO [agent t=  3.64] calibrate({})
+2026-11-14 22:48:57,077 robot_sorter INFO [robot t=  3.64] start calibrate: left arm in view (both arm, 3.4 s)
+2026-11-14 22:49:08,974 robot_sorter INFO [robot t=  7.30] calibrate: left arm in view: completed
+2026-11-14 22:49:09,032 robot_sorter INFO [robot t=  7.30] start calibrate: right arm in view (both arm, 3.4 s)
+2026-11-14 22:49:20,829 robot_sorter INFO [robot t= 10.97] calibrate: right arm in view: completed
+2026-11-14 22:49:20,850 robot_sorter INFO [robot t= 10.97] start calibrate: left arm in view (both arm, 3.4 s)
+2026-11-14 22:49:32,827 robot_sorter INFO [robot t= 14.64] calibrate: left arm in view: completed
+2026-11-14 22:49:32,847 robot_sorter INFO [robot t= 14.64] start calibrate: right arm in view (both arm, 2.9 s)
+2026-11-14 22:49:44,323 robot_sorter INFO [robot t= 17.80] calibrate: right arm in view: completed
+2026-11-14 22:49:44,331 robot_sorter INFO [robot t= 17.80] start arms aside (both arm, 1.4 s)
+2026-11-14 22:49:52,456 robot_sorter INFO [robot t= 19.74] arms aside: completed
+2026-11-14 22:50:08,393 robot_sorter INFO [robot t= 23.94] scene moved by [0, 0, 34] mm (total [0, 0, 34] mm from the scene file)
+2026-11-14 22:50:08,394 robot_sorter INFO [tool] calibrate: camera from arms; table +34 mm (+-2) vs scene.yaml, shifted (+2, +4) mm (+-2), tilt 0.5 deg (+-0.2), yaw -0.2 deg; applied [0, 0, 34] mm
+2026-11-14 22:50:08,395 robot_sorter INFO [agent t= 23.94] calibrate -> {'status': 'completed', 'measured': {'table_height_vs_file_mm': 34, 'shift_vs_file_mm': [2, 4], 'tilt_deg': 0.5, 'uncertainty_mm': 2, 'arm_fit': {'moments_used': 4, 'depth_points_on_the_arm_pct': 100, 'rms_mm': 2.3}}, 'applied_offset_mm': [0, 0, 34], 'note': 'the scene was moved by the measured offset: call look again', 'holding': 'nothing', 'time_left_s': 96.1}
+2026-11-14 22:50:08,403 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:50:10,058 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:50:10,059 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:50:10,060 robot_sorter INFO [agent t= 24.54] look({})
+2026-11-14 22:50:10,066 robot_sorter INFO [robot t= 24.54] start arms aside (both arm, 0.3 s)
+2026-11-14 22:50:12,688 robot_sorter INFO [robot t= 25.30] arms aside: completed
+2026-11-14 22:50:14,132 robot_sorter INFO [agent t= 25.70] look -> {'status': 'ok', 'objects_on_counter': [{'id': 'obj_4', 'side': 'left', 'position_m': [0.306, 0.162], 'point': [708, 196], 'rgb': [196, 80, 81], 'shape_guess': 'cube', 'yaw_deg_guess': 19.9, 'gemini_label': {'colour': 'red', 'colour_confidence': 0.99, 'shape': 'cube', 'shape_confidence': 0.97}}, {'id': 'obj_5', 'side': 'left', 'position_m': [0.318, 0.015], 'point': [680, 499], 'rgb': [86, 129, 192], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'blue', 'colour_confidence': 0.99, 'shape': 'cylinder', 'shape_confidence': 1.0}}, {'id': 'obj_6', 'side': 'right', 'position_m': [0.295, -0.104], 'point': [733, 749], 'rgb': [204, 194, 68], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'yellow', 'colour_confidence': 0.98, 'shape': 'cylinder', 'shape_confidence': 0.99}}], 'bins': {'left': [0.505, 0.26], 'center': [0.505, 0.0], 'right': [0.505, -0.26]}, 'instruction': 'Put the red objects in the left bin, the yellow objects in the center bin and the blue objects in the right bin.', 'holding': 'nothing', 'time_left_s': 94.3}
+2026-11-14 22:50:14,142 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:50:15,745 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:50:15,747 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:50:15,748 robot_sorter INFO [agent t= 26.10] pick_and_place({'bin': 'left', 'object_id': 'obj_4'})
+2026-11-14 22:50:20,248 robot_sorter INFO [robot t= 27.50] start pick_and_place obj_4 -> left: grasp and lift (left arm, 3.7 s)
+2026-11-14 22:50:34,455 robot_sorter INFO [robot t= 31.77] pick_and_place obj_4 -> left: grasp and lift: completed
+2026-11-14 22:50:34,463 robot_sorter INFO [robot t= 31.77] start pick_and_place obj_4 -> left: carry and release (left arm, 2.6 s)
+2026-11-14 22:50:43,757 robot_sorter INFO [robot t= 34.60] pick_and_place obj_4 -> left: carry and release: completed
+2026-11-14 22:50:43,759 robot_sorter INFO [agent t= 34.60] pick_and_place -> {'status': 'completed', 'arm': 'left', 'seconds': 7.6, 'object': 'obj_4', 'bin': 'left', 'grasp_at_m': [0.306, 0.162, 0.088], 'grasp': {'arm': 'left', 'grip': 'left arm, plain pinch', 'options_left': 7}, 'holding': 'nothing', 'time_left_s': 85.4, 'grasp_check': {'finger_tracking_error_rad': 0.063, 'object_in_hand': True, 'decided_by': 'finger sensors'}, 'arm_waiting': {'arm': 'left', 'next_object': 'obj_5', 'chosen_by': 'Gemini Decisions (0.68)', 'note': 'the left arm is waiting above the bin: pick_and_place obj_5 next saves about 3 s. Any other call works too.'}, 'objects_on_counter': [{'id': 'obj_5', 'side': 'left', 'position_m': [0.318, 0.015], 'point': [680, 499], 'rgb': [86, 129, 192], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'blue', 'colour_confidence': 0.99, 'shape': 'cylinder', 'shape_confidence': 1.0}}, {'id': 'obj_6', 'side': 'right', 'position_m': [0.295, -0.104], 'point': [733, 749], 'rgb': [204, 194, 68], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'yellow', 'colour_confidence': 0.98, 'shape': 'cylinder', 'shape_confidence': 0.99}}]}
+2026-11-14 22:50:43,769 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:50:45,404 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:50:45,406 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:50:45,407 robot_sorter INFO [agent t= 35.00] pick_and_place({'object_id': 'obj_5', 'bin': 'right'})
+2026-11-14 22:50:46,421 robot_sorter INFO [robot t= 35.20] start pick_and_place obj_5 -> right: grasp and lift (right arm, 5.3 s)
+2026-11-14 22:51:06,041 robot_sorter INFO [robot t= 41.04] pick_and_place obj_5 -> right: grasp and lift: completed
+2026-11-14 22:51:06,049 robot_sorter INFO [robot t= 41.04] start pick_and_place obj_5 -> right: carry and release (right arm, 2.6 s)
+2026-11-14 22:51:15,555 robot_sorter INFO [robot t= 43.90] pick_and_place obj_5 -> right: carry and release: completed
+2026-11-14 22:51:15,556 robot_sorter INFO [agent t= 43.90] pick_and_place -> {'status': 'completed', 'arm': 'right', 'seconds': 9.1, 'object': 'obj_5', 'bin': 'right', 'grasp_at_m': [0.318, 0.015, 0.088], 'grasp': {'arm': 'right', 'grip': 'right arm, plain pinch', 'options_left': 5}, 'holding': 'nothing', 'time_left_s': 76.1, 'grasp_check': {'finger_tracking_error_rad': 0.013, 'object_in_hand': True, 'decided_by': 'finger sensors'}, 'arm_waiting': {'arm': 'right', 'next_object': 'obj_6', 'chosen_by': 'Gemini Decisions (0.89)', 'note': 'the right arm is waiting above the bin: pick_and_place obj_6 next saves about 3 s. Any other call works too.'}, 'objects_on_counter': [{'id': 'obj_6', 'side': 'right', 'position_m': [0.295, -0.104], 'point': [733, 749], 'rgb': [204, 194, 68], 'shape_guess': 'cylinder', 'yaw_deg_guess': None, 'gemini_label': {'colour': 'yellow', 'colour_confidence': 0.98, 'shape': 'cylinder', 'shape_confidence': 0.99}}]}
+2026-11-14 22:51:15,565 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:51:17,533 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:51:17,534 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:51:17,535 robot_sorter INFO [agent t= 44.50] pick_and_place({'bin': 'center', 'object_id': 'obj_6'})
+2026-11-14 22:51:17,702 robot_sorter INFO [robot t= 44.50] start pick_and_place obj_6 -> center: grasp and lift (right arm, 4.2 s)
+2026-11-14 22:51:32,937 robot_sorter INFO [robot t= 49.17] pick_and_place obj_6 -> center: grasp and lift: completed
+2026-11-14 22:51:32,945 robot_sorter INFO [robot t= 49.17] start pick_and_place obj_6 -> center: carry and release (right arm, 2.9 s)
+2026-11-14 22:51:43,090 robot_sorter INFO [robot t= 52.30] pick_and_place obj_6 -> center: carry and release: completed
+2026-11-14 22:51:43,090 robot_sorter INFO [robot t= 52.30] start pick_and_place obj_6 -> center: back home (right arm, 1.6 s)
+2026-11-14 22:51:49,403 robot_sorter INFO [robot t= 54.17] pick_and_place obj_6 -> center: back home: completed
+2026-11-14 22:51:49,411 robot_sorter INFO [robot t= 54.17] start arms aside (both arm, 1.3 s)
+2026-11-14 22:51:55,324 robot_sorter INFO [robot t= 56.00] arms aside: completed
+2026-11-14 22:51:55,373 robot_sorter INFO [agent t= 56.00] pick_and_place -> {'status': 'completed', 'arm': 'right', 'seconds': 8.7, 'object': 'obj_6', 'bin': 'center', 'grasp_at_m': [0.295, -0.104, 0.088], 'grasp': {'arm': 'right', 'grip': 'right arm, plain pinch', 'options_left': 5}, 'holding': 'nothing', 'time_left_s': 65.8, 'grasp_check': {'finger_tracking_error_rad': 0.036, 'object_in_hand': True, 'decided_by': 'finger sensors'}, 'objects_on_counter': []}
+2026-11-14 22:51:55,383 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:51:57,110 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:51:57,112 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:51:57,112 robot_sorter INFO [agent t= 56.40] done({'summary': 'Sorted the red cube into the left bin, the yellow cylinder into the center bin, and the blue cylinder into the right bin.'})
+2026-11-14 22:51:57,113 robot_sorter INFO [robot t= 56.40] done: Sorted the red cube into the left bin, the yellow cylinder into the center bin, and the blue cylinder into the right bin.
+2026-11-14 22:51:57,113 robot_sorter INFO [agent t= 56.40] done -> {'status': 'episode ended', 'moves': 15, 'holding': 'nothing', 'time_left_s': 63.6}
+2026-11-14 22:51:57,122 google_adk.google.adk.models.google_llm INFO Sending out request, model: gemini-4-hydrogen, backend: GoogleLLMVariant.GEMINI_API, stream: False
+2026-11-14 22:51:58,694 httpx INFO HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent "HTTP/1.1 200 OK"
+2026-11-14 22:51:58,695 google_adk.google.adk.models.google_llm INFO Response received from the model.
+2026-11-14 22:51:58,696 robot_sorter INFO [agent t= 56.60] says: All objects have been sorted into their respective bins: the red cube is in the left bin, the yellow cylinder is in the center bin, and the blue cylinder is in the right bin.

@@ -53,6 +53,7 @@ A new session starts a new mock episode with the next layout.
 | `look` | the oracle's look, but from the head camera: any saturated colour + depth (the organisers' detector, extended beyond the sim's red / yellow / blue). `ROBOT_PERCEPTION=sim` uses the oracle's exact simulator poses (not allowed in a submission) |
 | `view_camera` | not from the oracle: head, wrist or depth image at full resolution, optional zoom region, object ids drawn on |
 | `ask_gemini` | not from the oracle: one closed question about a camera image to the Gemini Decisions API (about a second) |
+| `measure_scene` | not from the oracle: calibrates the head camera against the robot's own arms and measures the table and bins from depth (`selfcal.py`, GTSAM); reports how the real scene differs from `scene.yaml`. Report only |
 | `choose_arm` | what each arm can do for an object: distance, reach, grasp plan, full plan. The rule is in `arms.py` |
 | `check_plan` | plans a grasp with every safety check and moves nothing, to find a variation that works after "no safe plan" |
 | `read_proprioception` | not from the oracle: joint angles and speeds, where each hand is, how far it is closed, tracking errors |
@@ -87,6 +88,38 @@ pointing at it in the head image (`point`, `[y, x]` 0..1000). A call with no saf
   process cannot import `zmq`, the only way to reach the simulator's scene service, and the Modal environment
   does not install it. What it does take from the organisers' files: the bins' positions and size, the counter
   height, the camera calibration and the nominal object size.
+
+## Measuring the scene instead of trusting the files (`selfcal.py`, tools `measure_scene` and `calibrate`)
+
+Trusted: the robot model (URDF, meshes) and the joint angles. Measured: (1) the head camera's pose from the robot's
+own arms seen in the depth image, (2) the table and bins relative to the camera (the existing fit), (3) both poses
+together with their uncertainty in a small GTSAM factor graph; the calibration file and `scene.yaml` are loose
+priors. Needs `gtsam` (4.3) in the environment and the arm meshes next to the URDF.
+
+`measure_scene` only reports. `calibrate` corrects, in this order: a table tilt above 2.5 deg goes into the robot
+model as upper-body pitch and roll (the organisers' kinematics takes waist joint angles), so the planner keeps
+working in a frame that is level with the table; then the scene is moved by any offset above 15 mm. It first uses
+what the camera has already seen of the arms; with fewer than three still arm poses it then moves each arm into
+view (about 15 s). `look` tells the agent to call it when the table-based camera fit sits more than 2 cm from the
+robot model's camera position. `ROBOT_SELFCAL=0` removes both tools (for A/B runs).
+
+What has been checked:
+
+- **Real robot, data drop 3** (`sim/real_data_check.py data_drops/drop3`): in the arms' frame the table rises
+  12.3 deg away from the robot and the bins are 6-8 cm further than in `scene.yaml`. `calibrate`, run on the first
+  frame of each episode alone, gives a fit in 13 of 15 episodes: upper body pitch +12.4 deg (std 2.3), scene moved
+  +65 mm forward and 46 mm down. Judged on later moments of the same episodes, the arm the camera sees is then a
+  median 4 mm from where the joint angles put it (today: 15 mm), 78 % of its points within 10 mm (today: 36 %).
+- **Isaac sim, table raised 3 cm** (sweep `selfcal-ab`): measured +34 mm in all three episodes and applied. The score
+  did not improve (11/12 with, 12/12 without): the sim tolerates hands commanded 12 mm into the table. It costs
+  about 20 s of the episode.
+- **Isaac sim, nominal**: reads table +8 mm, shift up to 6 mm, tilt 0.4-1.9 deg where the truth is zero (the sim
+  renders with the principal point at the image centre, not the calibration file's); below the thresholds, so
+  nothing is changed.
+
+Not done: a run on the real robot; a sim run with a tilted robot; the calibration poses have only been run in the
+sim; the submission image has neither `gtsam` nor the meshes; the organisers' own safety filter works in the
+un-tilted frame.
 
 ## Varied scenes
 

@@ -142,6 +142,56 @@ Severity: **A** = can change scores or break a build, **B** = sim/real mismatch 
 - Question: will the real-robot episodes start from `ARM_HOME` as well, and is a submission expected to avoid arm-arm
   contact by itself?
 
+### A13. Rung 3: two of the three lid holes are out of the arm's reach, the third only from high up
+
+- `Scene.lid_holes()` puts the circle and square holes on the lid's far half: pelvis (0.575, +0.190) and
+  (0.575, +0.329). The triangle hole is at (0.522, +0.260). INTERFACE.md says the arm reaches "~0.55 m with a
+  straight arm" and tells us to release in the near part of each box.
+- Checked with the baseline's own IK (`ArmKinematics.solve`, left arm, waist fixed, hand free to tilt), grasp point
+  9 to 45 cm above the counter: it stays 31-67 mm short of the circle hole and 62-94 mm short of the square hole at
+  every height. Above the triangle hole it gets there only from 20 cm above the counter (object bottom about 11 cm
+  above the lid) with the hand upright; at 13 cm it is 16 mm short. The right arm is 10-20 cm short of all three.
+- Farthest forward the left hand reaches palm-down, 10-16 cm above the counter: x = 0.47-0.53 depending on y.
+- `evaluate.py` says the oracle does not do `insert_shapes`, and `check_scene.py --lid` teleports the objects above
+  the holes, so nothing in the repo shows the robot can do this task with this lid.
+- Questions: is rung 3 run in the finals? Is the lid the repo's `lid_shapes.stl` (210 mm) or a 200 mm one (we
+  have a file named `lid_shape_holes_200mm.stl`), and which way round does it sit? Could the holes be on the near half?
+
+### A14. The sim's head camera does not use the calibration file's principal point
+
+- `interface/calibration.yaml` gives the head camera cx = 325.04, cy = 250.93 (the real D435i's factory values) and
+  `sim/aalto_task/scene_cfg.py` passes them to `PinholeCameraCfg.from_intrinsic_matrix`. The rendered images behave
+  as if the principal point were the image centre (320, 240).
+- Evidence (nominal sim, no randomisation, run `selfcal-rec`): fitting the camera pose to the table plane and the
+  bin walls in the head depth image, the camera has to be moved (-9, -7) mm and tilted 0.9 deg from the file's pose
+  with the file's cx, cy; with cx = 320, cy = 240 the shift is (0, -1) mm and the tilt 0.5 deg. Same in both episodes.
+- Effect: 5 and 11 pixels of principal-point error are about 0.5 and 1.0 deg of apparent camera rotation, 4-8 mm at
+  the objects. A policy that takes object positions from the calibration file without re-fitting is off by that much
+  in the sim only. (We re-fit the camera pose per episode, which absorbs most of it.)
+- Question: which principal point does the held-out sim use, and are the file's values right for the real camera?
+
+### A15. Real robot (data drop 3): the table is tilted about 12 deg and 8 cm further away in the robot's frame
+
+- Method (`sim/real_data_check.py` in our repo, on `zupermiez/g1_junction_drop_3`): the head camera's pose is fitted
+  to the robot's own arms and hands in the depth images (URDF meshes + recorded joint angles; 24 still moments,
+  136 000 depth points, 81 % on the model, rms 3.5 mm). That gives the camera relative to the arms without any
+  assumption about the table.
+- Camera vs `calibration.yaml`: pitch -2.0, pan -3.1, roll -0.5 deg, position within 7 mm. So the camera mount is
+  close to the file; it does not look "10 deg further down" relative to the arms.
+- The table plane seen by that camera, in the arms' (pelvis, waist at 0) frame: it rises 12.3 deg away from the robot
+  (std 0.7 over 12 frames): +4 / +37 / +69 mm at 0.20 / 0.35 / 0.50 m ahead. `scene.yaml` has it level at +10 mm.
+- Independent check from joint angles only: the height of the hand when it closes on an object, over 84 picks in
+  drops 1-3, rises 10.6 deg away from the robot (20-25 mm scatter).
+- Fitting the camera to the table and bins as `scene.yaml` has them needs a 14.2-15.2 deg tilt and a 9 cm shift.
+  A policy that does this and then sends the arms to `scene.yaml` positions is 6-8 cm short and 3-7 cm low.
+- Reading: the upper body (arms and head together) is pitched about 12 deg forward relative to the table (waist
+  pitch not at 0, or the robot leaning), and the bins are about 8 cm further away than in the file.
+- Questions: is the waist pitch (or the stance) on the real robot really not 0? Will `scene.yaml` /
+  `calibration.yaml` be re-measured for the finals setup, and does the tilt go into the pelvis frame definition?
+- Also from the data: the real arms follow their commands about 100 ms later (3 ticks) than the sim's (0 ticks); the
+  episodes start from widely different arm poses (joint std 0.1-0.4 rad), hands about 10 cm above the table, where
+  the sim's home pose has them 21 cm up.
+
 ## B. Numbers marked "(default)" that we need measured
 
 | Item | Value in repo | Where |

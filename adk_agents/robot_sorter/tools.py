@@ -128,6 +128,8 @@ async def _park(robot, keep=None):
 
 
 CHAIN = os.environ.get("ROBOT_CHAIN", "1") == "1"
+SELFCAL = os.environ.get("ROBOT_SELFCAL", "1") == "1"     # 0 = the agent as it was before calibrate (for A/B runs only)
+CAMERA_CHECK_M = 0.02      # the table-based camera fit sits 8 mm from the calibration file's pose in the nominal sim
 
 
 async def _next_for_arm(robot, side, placed_id, bin_name, end_arm, end_hand):
@@ -324,7 +326,14 @@ async def _look_result(robot):
     robot.view_requests.append({"camera": "head", "region": None, "mark_objects": True})   # ids drawn on the image
     ctx = robot.ctx
     bins = {b: [round(float(v), 3) for v in ctx.planner.bin_xy(b)] for b in ctx.bins()}
-    return _result("ok", objects_on_counter=objects, bins=bins, instruction=robot.instruction)
+    out = _result("ok", objects_on_counter=objects, bins=bins, instruction=robot.instruction)
+    fit = robot.pose_fit or {}
+    if SELFCAL and not robot.calibrated and (fit.get("camera_moved_m", 0.0) > CAMERA_CHECK_M or (fit.get("fit_ok") and not fit.get("used"))):
+        out["camera_check"] = (f"WARNING: to match the table and bins in the scene file, the camera would have to sit "
+                               f"{fit.get('camera_moved_m', 0.0) * 100:.0f} cm from where the robot model has it. Either the camera "
+                               f"mount is off or the table / the robot's place is not as in the file; grasps go wrong in "
+                               f"the second case. Call calibrate once now, before picking, to measure which.")
+    return out
 
 
 def _expect(robot, object_id, xy):
@@ -854,6 +863,167 @@ async def ask_gemini(
     return _result("ok", question=question, **out)
 
 
+# Where a hand goes for calibrate: [arm, hand position (x forward, y left, height above the counter) m, palm down?].
+# Reaching across to the middle puts the forearm in the middle of the head image (1200-1500 model points in view; the
+# poses of a normal pick show 30-280). 15 cm up clears the objects and the bin rims even if the table is 5 cm higher
+# than the scene file says.
+CAL_POSES = [("left", (0.50, 0.0, 0.15), True), ("right", (0.50, 0.0, 0.15), True),
+             ("left", (0.50, 0.06, 0.18), False), ("right", (0.50, -0.06, 0.18), False)]
+CAL_HOLD_S = 1.5
+
+
+def _cal_plan(robot, ctx, arm_q, hand_q, side, xyz, top_down):
+    """One arm to a calibration pose, the other aside, then hold still. None if not reachable or not safe."""
+    from agent.skills.motion import Trajectory
+    if robot.aside is None:
+        return None
+    to_a, to_h = np.asarray(robot.aside, float).copy(), np.asarray(ctx.post["open"], float).copy()
+    with ctx.lock:
+        sol = ctx.kin.solve(side, np.array([xyz[0], xyz[1], ctx.scene.counter_z + xyz[2]]), to_a, top_down=top_down)
+        if not sol[1]:
+            return None
+        to_a = np.asarray(sol[0], float)
+        a, h = ctx.planner.go_to(arm_q, hand_q, to_a, to_h)
+        if not len(a) or ctx.planner.dry_run_safety(arm_q, hand_q, a, h):
+            return None
+    if _min_arm_distance(ctx, a, h) < ARM_CLEARANCE_M:
+        return None
+    n = int(round(CAL_HOLD_S * HZ))
+    a, h = np.vstack([a, np.repeat(a[-1:], n, 0)]), np.vstack([h, np.repeat(h[-1:], n, 0)])
+    return Trajectory(True, "calibrate", {}, a, h, [("calibrate", 0, len(a))])
+
+
+@_tool
+async def calibrate() -> dict:
+    """Measure the scene against the robot's own arms and use the result for every later move.
+
+    From the depth images of its own arms and the joint angles it works out where the camera really is, and from
+    that how the table and bins differ from the scene file: higher or lower, shifted, tilted (a robot that leans).
+    What is larger than the measurement's own error is then corrected: a tilt goes into the robot model (upper-body
+    pitch and roll), a shift moves the scene; grasp heights, object positions and drop points all follow. If the
+    camera has not yet seen the arms standing still in three poses, each arm first reaches into the camera's view
+    and holds still (about 15 s in all).
+
+    Call it when look reports a camera_check warning, or when grasps keep missing in the same way (closing above or
+    below the objects, or always off to one side). Once is enough; the result is kept. Put down anything you hold
+    first. Afterwards call look: every position from before is void.
+
+    Returns:
+      measurements: each measurement made (table tilt, height and shift against the scene file, how well the arm
+        model fits the depth points) and what it corrected;
+      upper_body_pitch_roll_deg, scene_offset_mm [x forward, y left, z up]: the corrections now in force.
+    """
+    robot = get_robot()
+    await _ready(robot)
+    if robot.holding:
+        return _result("failed", reason="a hand is holding an object: put it down first")
+    # First with what the camera has already seen of the arms (on the real robot the hands are in view from the
+    # start): a rough correction, so that the calibration poses below are planned in a frame that is about right.
+    first = await asyncio.to_thread(_measure_and_apply, robot)
+    held = 0
+    if first is None or first["moments"] < CAL_MOMENTS:
+        await _park(robot)
+        for side, xyz, top_down in CAL_POSES:
+            start = robot.command_state()
+            traj = await asyncio.to_thread(_cal_plan, robot, robot.ctx, *start, side, xyz, top_down)
+            if traj is None:
+                continue
+            await _run(robot, traj, f"calibrate: {side} arm in view", start, settle=False)
+            held += 1
+        await _park(robot)
+        second = await asyncio.to_thread(_measure_and_apply, robot)
+    else:
+        second = None
+    done = [d for d in (first, second) if d is not None]
+    if not done:
+        robot.trace.write("calibrate", t=round(robot.t, 2), ok=False, poses=held)
+        return _result("failed", reason="could not measure the camera against the arms. Nothing was changed.", poses_held=held)
+    robot.calibrated = True
+    changed = any(d["tilt_applied_deg"] != [0.0, 0.0] or any(d["offset_applied_mm"]) for d in done)
+    out = dict(measurements=done, poses_held=held,
+               upper_body_pitch_roll_deg=[round(float(np.degrees(v)), 1) for v in robot.waist],
+               scene_offset_mm=[int(v) for v in np.round(robot.scene_offset * 1000)],
+               note=("the robot model and the scene were corrected by what was measured: call look again" if changed else
+                     "the files are right within this measurement's error: nothing was changed"))
+    robot.trace.write("calibrate", t=round(robot.t, 2), ok=True, **out)
+    robot.log(f"[tool] calibrate: upper body {out['upper_body_pitch_roll_deg']} deg, scene offset {out['scene_offset_mm']} mm")
+    return _result("completed", **out)
+
+
+CAL_MOMENTS = 3            # calibrate skips its own arm motion if the camera has already seen this many still arm poses
+TILT_MIN_DEG = 2.5         # a table tilt below this is within the measurement's error (nominal sim reads 0.4-1.9 deg)
+
+
+def _measure_and_apply(robot):
+    """Measure the camera against the arms and the scene against the camera; put a tilt of the table into the robot
+    model (upper-body pitch / roll), measure again in that frame, and move the scene by what is left. None if the
+    camera could not be measured against the arms."""
+    from . import selfcal
+    est, arm, why = robot.measure_scene()
+    if est is None or est.cam_from != "arms":
+        return None
+    out = dict(moments=arm.frames, fitted=robot.arm_fit_model, points_on_arm_pct=round(100 * arm.matched),
+               rms_mm=round(arm.rms_m * 1000, 1), table_tilt_deg=round(est.tilt_deg, 1), tilt_applied_deg=[0.0, 0.0])
+    if est.tilt_deg > TILT_MIN_DEG:
+        pitch, roll = selfcal.level_angles(est.S)
+        robot.set_waist(robot.waist[0] + pitch, robot.waist[1] + roll)
+        out["tilt_applied_deg"] = [round(float(np.degrees(pitch)), 1), round(float(np.degrees(roll)), 1)]
+        est2, arm2, _ = robot.measure_scene()
+        if est2 is not None and est2.cam_from == "arms":
+            est = est2
+            out["table_tilt_after_deg"] = round(est.tilt_deg, 1)
+    t = robot.apply_scene(est, robot.last_fit_T, set_camera=out["tilt_applied_deg"] != [0.0, 0.0])
+    out.update(table_height_vs_file_mm=round(est.table_dz_m * 1000),
+               shift_vs_file_mm=[round(est.shift_xy_m[0] * 1000), round(est.shift_xy_m[1] * 1000)],
+               uncertainty_mm=round(max(est.sigma_dz_m, est.sigma_xy_m) * 1000), offset_applied_mm=[int(v) for v in np.round(t * 1000)])
+    return out
+
+
+@_tool
+async def measure_scene() -> dict:
+    """Measure where the camera and the table really are, instead of trusting the configuration files.
+
+    It calibrates the head camera against the robot's own arms (the depth image shows the arm, the joint angles say
+    where it is), measures the table and the bins relative to the camera, and combines both with their uncertainty.
+    It reads only: it changes nothing about how the robot moves. It needs a few moments at which an arm stood still
+    in the camera's view, so it works after two or three picks, not at the start; it takes a few seconds.
+
+    Call it at most once or twice an episode, when grasps keep missing in the same direction or closing above or
+    below the objects, to find out whether the table is higher or lower, shifted, or tilted (a leaning robot).
+
+    Returns:
+      table_height_vs_file_mm, shift_vs_file_mm [x forward, y left], tilt_deg, yaw_deg: how the real scene differs
+        from the scene file, each with its uncertainty; camera_measured_from ("arms", or "calibration file only" when
+        no arm has been seen standing still yet: then the numbers are only as good as the files);
+      verdict: whether the difference is larger than this measurement can tell.
+    """
+    robot = get_robot()
+    await _ready(robot)
+    est, arm, why = await asyncio.to_thread(robot.measure_scene)
+    if est is None:
+        return _result("failed", reason=why)
+    # In the nominal sim, where the scene is exactly the file's, this measurement reads about +8 mm, (+6, +5) mm and
+    # 1.7 deg (two episodes, repeatable to 1-2 mm; cause not found). Anything inside that is not a finding.
+    big = (abs(est.table_dz_m) > 0.015 or max(abs(est.shift_xy_m[0]), abs(est.shift_xy_m[1])) > 0.015 or est.tilt_deg > 2.5)
+    measured = est.cam_from == "arms"
+    out = dict(camera_measured_from=est.cam_from,
+               table_height_vs_file_mm=round(est.table_dz_m * 1000), table_height_uncertainty_mm=round(est.sigma_dz_m * 1000),
+               shift_vs_file_mm=[round(est.shift_xy_m[0] * 1000), round(est.shift_xy_m[1] * 1000)],
+               shift_uncertainty_mm=round(est.sigma_xy_m * 1000),
+               tilt_deg=round(est.tilt_deg, 1), tilt_uncertainty_deg=round(est.sigma_tilt_deg, 1), yaw_deg=round(est.yaw_deg, 1),
+               verdict=("not measured: " + why + ". These numbers only repeat the files." if not measured else
+                        "the scene differs from the scene file by more than this measurement's error: grasps planned "
+                        "from the file will be off by about that much" if big else
+                        "the scene agrees with the scene file within this measurement's error (about 15 mm, 2.5 deg)"),
+               note="report only: the robot's motions still use the scene file")
+    if arm is not None and arm.ok:
+        out["arm_fit"] = {"moments_used": arm.frames, "depth_points_on_the_arm_pct": round(100 * arm.matched),
+                          "rms_mm": round(arm.rms_m * 1000, 1)}
+    robot.trace.write("scene_measured", t=round(robot.t, 2), **out)
+    robot.log(f"[tool] measure_scene: {est.summary()}" + (f" ({why})" if why else ""))
+    return _result("ok", **out)
+
+
 @_tool
 async def read_proprioception() -> dict:
     """Read the robot's joint sensors: what the arms and hands are doing right now, without a camera.
@@ -1242,5 +1412,7 @@ async def done(summary: str = "") -> dict:
     return out
 
 
-TOOLS = [look, view_camera, ask_gemini, read_proprioception, choose_arm, check_plan, pick_and_place, pick, place, place_on_counter, hand_over,
+TOOLS = [look, view_camera, ask_gemini, read_proprioception, measure_scene, calibrate, choose_arm, check_plan, pick_and_place, pick, place, place_on_counter, hand_over,
          go_home, wait, done]
+if not SELFCAL:
+    TOOLS = [t for t in TOOLS if t not in (calibrate, measure_scene)]

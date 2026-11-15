@@ -12,3 +12,4 @@ __pycache__/
 aaltonomous-humanoid/
 # model weights
 submission/weights/
+data_drops/

@@ -59,6 +59,7 @@ How to work, one step at a time (look, act, check, repeat):
    the other objects first and come back. When no grip is left, change an argument (xy_offset_m the way
    object_moved_m shows it was pushed, max_tilt_deg, grasp_height_frac, finger_direction_deg) or hand it over.
    A block lying on its side (lying_ridge_deg) is gripped across its two ends automatically.
+   If look returns a camera_check WARNING, call calibrate once before the first pick, then look again.
 4. "failed: no safe plan" means nothing moved; the reason names what was in the way. Find a plan that works
    before moving: call choose_arm to see what each arm can do, and check_plan with variations (several calls in
    one turn are fine): the other arm, max_tilt_deg 50, a pregrasp_offset_m away from the bin rim or the body that

@@ -117,6 +117,9 @@ def main():
     ap.add_argument("--dr", choices=["wide"], default=None)
     ap.add_argument("--placement", choices=["wide"], default=None)
     ap.add_argument("--instructions", choices=["shape"], default=None)
+    ap.add_argument("--table", default=None, help="dx,dy,dz in metres: move the table (counter, mat, bins, objects) "
+                    "relative to the robot, e.g. 0,0,0.03 = table 3 cm higher. The policy can keep the original "
+                    "file: ROBOT_SCENE_FILE=<scene.yaml>.orig")
     a = ap.parse_args()
     pkg = REPO / "aaltonomous"
     scene, tasks = pkg / "scene" / "scene.yaml", pkg / "interface" / "tasks.py"
@@ -143,12 +146,20 @@ def main():
             assert n == 1, f"layout.{key} not found in scene.yaml"
     if a.instructions == "shape":
         t += SHAPE_INSTRUCTIONS
+    if a.table:
+        d = [float(v) for v in a.table.split(",")]
+
+        def moved(m):
+            o = [float(v) for v in m.group(2).split(",")]
+            return m.group(1) + "[" + ", ".join(f"{o[k] + d[k]:.4f}" for k in range(3)) + "]"
+        s, n = re.subn(r"(\n  mat_origin_in_pelvis: )\[([^\]]*)\]", moved, s, count=1)
+        assert n == 1, "counter.mat_origin_in_pelvis not found in scene.yaml"
     if a.dr == "wide":
         (pkg / "sim" / "dr" / "wide.yaml").write_text(DR_WIDE)
     scene.write_text(s)
     tasks.write_text(t)
     print(f"scene variant applied in {REPO}: colors={a.colors} dr={a.dr} placement={a.placement} "
-          f"instructions={a.instructions}")
+          f"instructions={a.instructions} table={a.table}")
 
 
 if __name__ == "__main__":

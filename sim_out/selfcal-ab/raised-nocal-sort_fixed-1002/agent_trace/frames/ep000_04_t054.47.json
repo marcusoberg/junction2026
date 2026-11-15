@@ -1,0 +1,1 @@
+{"t": 54.47, "detections": [{"id": "obj_4", "side": "left", "position_m": [0.285, 0.001], "point": [759, 530], "rgb": [191, 79, 78], "shape_guess": "cylinder", "yaw_deg_guess": null, "gemini_label": {"colour": "red", "colour_confidence": 0.99, "shape": "cylinder", "shape_confidence": 0.99}}]}
